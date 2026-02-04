@@ -1,5 +1,5 @@
 import { useLocation, Link } from 'react-router-dom';
-import { Download, CheckCircle, Home, Calendar, Clock, MapPin, Share2 } from 'lucide-react';
+import { Download, CheckCircle, Home, Calendar, Clock, MapPin, Share2, Check } from 'lucide-react';
 import { formatShowTime } from '../data/shows';
 import { getShowById } from '../data/shows';
 import { getMovieById } from '../data/movies';
@@ -43,7 +43,9 @@ const BookingSuccessPage = () => {
             <div className="w-full max-w-5xl">
                 {/* Success Banner */}
                 <div className="flex items-center justify-center gap-2 mb-8 text-green-600 font-bold bg-green-50 py-3 px-6 rounded-full w-fit mx-auto border border-green-100 shadow-sm animate-fade-in-up">
-                    <CheckCircle className="w-5 h-5 fill-current" />
+                    <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                    </div>
                     <span>Payment Successful! Your booking is confirmed.</span>
                 </div>
 
