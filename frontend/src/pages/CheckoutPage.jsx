@@ -59,9 +59,9 @@ const CheckoutPage = () => {
             success: 'Booking confirmed!',
             error: 'Payment failed'
         }).then(() => {
-            navigate('/my-bookings', {
+            navigate('/booking-success', {
                 state: {
-                    newBooking: {
+                    booking: {
                         id: 'BK' + Math.floor(Math.random() * 100000),
                         showId,
                         seats: selectedSeats,

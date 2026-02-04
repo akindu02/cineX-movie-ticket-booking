@@ -7,6 +7,8 @@ import MovieDetailsPage from './pages/MovieDetailsPage';
 import SeatSelectionPage from './pages/SeatSelectionPage';
 import CheckoutPage from './pages/CheckoutPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import BookingSuccessPage from './pages/BookingSuccessPage';
+import MyBookingsPage from './pages/MyBookingsPage';
 import AboutUsPage from './pages/AboutUsPage';
 
 function App() {
@@ -30,6 +32,8 @@ function App() {
             <Route path="movies/:id" element={<MovieDetailsPage />} />
             <Route path="shows/:id/seats" element={<SeatSelectionPage />} />
             <Route path="checkout" element={<CheckoutPage />} />
+            <Route path="booking-success" element={<BookingSuccessPage />} />
+            <Route path="my-bookings" element={<MyBookingsPage />} />
 
             <Route path="about" element={<AboutUsPage />} />
             <Route path="admin" element={<AdminDashboardPage />} />
