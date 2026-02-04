@@ -4,7 +4,7 @@ import Footer from './Footer';
 
 const MainLayout = () => {
     const location = useLocation();
-    const hideFooter = location.pathname === '/about';
+    const hideFooter = location.pathname === '/about' || location.pathname.includes('/seats') || location.pathname.includes('/checkout');
 
     return (
         <div className="flex flex-col min-h-screen">
