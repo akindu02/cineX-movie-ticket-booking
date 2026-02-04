@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader2, User, Ticket, Star, Film } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, User, Ticket, Star, Film, Clapperboard, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SignUpPage = () => {
@@ -76,38 +76,37 @@ const SignUpPage = () => {
                 {/* Background Image with Overlay */}
                 <div className="absolute inset-0 z-0">
                     <img
-                        src="https://images.unsplash.com/photo-1517604931442-710c8ef5ad25?q=80&w=2066&auto=format&fit=crop"
-                        alt="Cinema Audience"
-                        className="w-full h-full object-cover opacity-50"
+                        src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1925&auto=format&fit=crop"
+                        alt="Cinema Background"
+                        className="w-full h-full object-cover opacity-60"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
                 </div>
 
                 {/* Content over Image */}
                 <div className="relative z-10 text-center px-12 max-w-xl">
                     <div className="mb-8 flex justify-center">
-                        <div className="w-20 h-20 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center shadow-2xl">
-                            <Star className="w-10 h-10 text-yellow-400 fill-current" />
+                        <div className="w-20 h-20 bg-[var(--color-primary)] rounded-3xl flex items-center justify-center shadow-2xl shadow-red-600/40 rotate-12">
+                            <Clapperboard className="w-10 h-10 text-white" />
                         </div>
                     </div>
                     <h2 className="text-5xl font-black text-white mb-6 leading-tight">
-                        Join the CineX Club
+                        Experience Movies Like Never Before
                     </h2>
-                    <p className="text-gray-300 text-lg leading-relaxed mb-10">
-                        Create an account to unlock exclusive rewards, faster booking, and personalized movie recommendations.
+                    <p className="text-gray-300 text-lg leading-relaxed">
+                        Book your tickets in seconds, skip the lines, and enjoy exclusive offers with your CineX account.
                     </p>
 
-                    <div className="grid grid-cols-2 gap-4 text-left">
-                        <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-                            <Ticket className="w-6 h-6 text-[var(--color-primary)] mb-2" />
-                            <h3 className="text-white font-bold">Priority Booking</h3>
-                            <p className="text-sm text-gray-400">Grab tickets before anyone else</p>
+                    {/* Floating Stats or Badges */}
+                    <div className="mt-12 flex items-center justify-center gap-6 text-sm font-bold text-gray-400 uppercase tracking-widest">
+                        <div className="flex items-center gap-2">
+                            <Smartphone className="w-5 h-5 text-white" />
+                            <span>Easy Booking</span>
                         </div>
-                        <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-                            <Film className="w-6 h-6 text-[var(--color-primary)] mb-2" />
-                            <h3 className="text-white font-bold">Premiere Access</h3>
-                            <p className="text-sm text-gray-400">Invites to special screenings</p>
-                        </div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
+                        <div>IMAX & 4DX</div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
+                        <div>Dolby Atmos</div>
                     </div>
                 </div>
             </div>
@@ -164,7 +163,7 @@ const SignUpPage = () => {
                                     value={formData.name}
                                     onChange={handleChange}
                                     className={`w-full bg-gray-50 border ${errors.name ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded-xl py-3.5 pl-12 pr-4 font-medium outline-none focus:bg-white focus:border-[var(--color-primary)] focus:ring-4 focus:ring-red-500/10 transition-all`}
-                                    placeholder="John Doe"
+                                    placeholder="Your Name"
                                 />
                             </div>
                             {errors.name && <p className="text-xs text-red-500 font-bold">{errors.name}</p>}
