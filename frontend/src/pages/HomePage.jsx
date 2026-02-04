@@ -5,7 +5,7 @@ import { Star, Calendar, Clock, Ticket, Film, Users, Trophy } from 'lucide-react
 
 const HomePage = () => {
     // Featured movies logic - maybe use for "Trending" instead of full hero
-    const nowShowing = movies.slice(0, 8);
+    const nowShowing = movies.slice(0, 10);
 
     return (
         <div className="min-h-screen pb-20 pt-20">
@@ -90,7 +90,7 @@ const HomePage = () => {
                     </Link>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                     {nowShowing.map((movie) => (
                         <Link
                             key={movie.id}
