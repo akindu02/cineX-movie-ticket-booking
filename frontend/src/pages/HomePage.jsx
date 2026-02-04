@@ -95,7 +95,7 @@ const HomePage = () => {
                         <Link
                             key={movie.id}
                             to={`/movies/${movie.id}`}
-                            className="bg-white rounded-xl overflow-hidden hover:-translate-y-2 transition-all duration-300 shadow-md hover:shadow-xl border border-[var(--color-dark-300)] group"
+                            className="bg-white rounded-xl overflow-hidden hover:-translate-y-2 transition-all duration-300 shadow-md hover:shadow-xl border border-[var(--color-dark-300)] group h-full flex flex-col"
                         >
                             <div className="relative aspect-[2/3] overflow-hidden bg-gray-100">
                                 <img
@@ -103,24 +103,25 @@ const HomePage = () => {
                                     alt={movie.title}
                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                 />
-                                <div className="absolute top-2 right-2 flex gap-1">
-                                    <span className="badge bg-white/90 backdrop-blur text-xs font-bold shadow-sm flex items-center gap-1 px-2 py-1 rounded-md text-[var(--color-light)]">
-                                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> {movie.rating}
+                                <div className="absolute top-2 right-2 badge bg-white/90 backdrop-blur text-xs font-bold flex items-center gap-1 shadow-sm px-2 py-1 rounded-md text-[var(--color-light)]">
+                                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> {movie.rating}
+                                </div>
+                                {/* Hover Overlay */}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-4">
+                                    <span className="btn btn-primary rounded-full px-6 flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 shadow-lg">
+                                        <Ticket className="w-4 h-4" /> Book Now
                                     </span>
                                 </div>
                             </div>
-                            <div className="p-5">
-                                <h3 className="font-bold text-lg mb-1 truncate text-[var(--color-light)]">{movie.title}</h3>
-                                <div className="flex justify-between items-center text-sm text-[var(--color-light-400)] mb-4">
+                            <div className="p-5 flex flex-col flex-grow">
+                                <h3 className="font-bold text-lg mb-1 truncate text-[var(--color-light)] group-hover:text-[var(--color-primary)] transition-colors">{movie.title}</h3>
+                                <div className="flex justify-between items-center text-sm text-[var(--color-light-400)] mt-auto">
                                     <span>{movie.genres[0]}</span>
                                     <div className="flex items-center gap-1">
                                         <Clock className="w-3 h-3" />
                                         <span>{Math.floor(movie.durationMins / 60)}h {movie.durationMins % 60}m</span>
                                     </div>
                                 </div>
-                                <button className="w-full btn btn-secondary py-2 text-sm">
-                                    Book Now
-                                </button>
                             </div>
                         </Link>
                     ))}
