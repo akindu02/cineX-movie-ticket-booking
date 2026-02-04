@@ -1,0 +1,29 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import MainLayout from './layout/MainLayout';
+import HomePage from './pages/HomePage';
+import MoviesPage from './pages/MoviesPage';
+import MovieDetailsPage from './pages/MovieDetailsPage';
+import SeatSelectionPage from './pages/SeatSelectionPage';
+import CheckoutPage from './pages/CheckoutPage';
+import MyBookingsPage from './pages/MyBookingsPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<HomePage />} />
+          <Route path="movies" element={<MoviesPage />} />
+          <Route path="movies/:id" element={<MovieDetailsPage />} />
+          <Route path="shows/:id/seats" element={<SeatSelectionPage />} />
+          <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="my-bookings" element={<MyBookingsPage />} />
+          <Route path="admin" element={<AdminDashboardPage />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
