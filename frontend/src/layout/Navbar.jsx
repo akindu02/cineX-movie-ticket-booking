@@ -1,83 +1,110 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Search, Menu, User, X } from 'lucide-react';
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const location = useLocation();
 
+    // Removed scroll logic as per "White background" requirement which implies consistent white header
+    // But if we want sticky behavior we can keep sticky class
+
     const navLinks = [
-        { path: '/', label: 'Home' },
-        { path: '/movies', label: 'Movies' },
-        { path: '/my-bookings', label: 'My Bookings' },
-        { path: '/admin', label: 'Admin' },
+        { name: 'Home', path: '/' },
+        { name: 'Now Showing', path: '/movies' },
+        { name: 'Upcoming', path: '/movies?filter=upcoming' },
+        { name: 'About Us', path: '/about' },
     ];
 
-    const isActive = (path) => location.pathname === path;
-
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-glass">
-            <div className="max-w-7xl mx-auto px-4 md:px-8">
-                <div className="flex items-center justify-between h-20">
-                    {/* Logo */}
-                    <Link to="/" className="flex items-center gap-2">
-                        <span className="text-3xl">🎬</span>
-                        <span className="text-2xl font-bold">
-                            Cine<span className="text-[var(--color-primary)]">X</span>
-                        </span>
-                    </Link>
+        <nav className="fixed top-0 left-0 w-full z-50 bg-white shadow-sm border-b border-[var(--color-dark-300)] py-4 transition-all duration-300">
+            <div className="max-w-[1400px] mx-auto px-4 md:px-8 flex items-center justify-between">
+                {/* Logo */}
+                <Link to="/" className="text-2xl md:text-3xl font-bold tracking-tight z-50 flex items-center gap-0.5">
+                    <span className="text-[var(--color-primary)]">Cine</span>
+                    <span className="text-[var(--color-light)]">X</span>
+                </Link>
 
-                    {/* Desktop Nav */}
-                    <div className="hidden md:flex items-center gap-8">
-                        {navLinks.map((link) => (
+                {/* Centered Navigation */}
+                <div className="hidden md:flex items-center gap-1">
+                    {navLinks.map((link) => {
+                        const isActive = location.pathname === link.path.split('?')[0] &&
+                            (link.path.includes('?') ? location.search.includes('upcoming') : !location.search.includes('upcoming'));
+
+                        return (
                             <Link
-                                key={link.path}
+                                key={link.name}
                                 to={link.path}
-                                className={`font-medium transition-colors ${isActive(link.path)
-                                        ? 'text-[var(--color-primary)]'
-                                        : 'text-[var(--color-light-300)] hover:text-white'
+                                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${isActive
+                                        ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                                        : 'text-[var(--color-light)] hover:text-[var(--color-primary)] hover:bg-gray-50'
                                     }`}
                             >
-                                {link.label}
+                                {link.name}
                             </Link>
-                        ))}
-                    </div>
+                        );
+                    })}
+                </div>
 
-                    {/* CTA Button */}
-                    <div className="hidden md:block">
-                        <Link to="/movies" className="btn btn-primary">
-                            Book Now
-                        </Link>
-                    </div>
+                {/* Right Actions */}
+                <div className="flex items-center gap-4 z-50">
+                    <button className="text-[var(--color-light)] hover:text-[var(--color-primary)] transition-colors p-2 rounded-full hover:bg-gray-100">
+                        <Search className="w-5 h-5" />
+                    </button>
 
-                    {/* Mobile Menu Toggle */}
-                    <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="md:hidden p-2 text-2xl"
+                    <Link
+                        to="/login"
+                        className="hidden md:flex btn btn-primary px-6 py-2.5 rounded-full text-sm font-bold shadow-none hover:shadow-lg transition-all"
                     >
-                        {isMenuOpen ? '✕' : '☰'}
+                        Login
+                    </Link>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                        className="md:hidden text-[var(--color-light)] hover:text-[var(--color-primary)] p-2"
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    >
+                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                     </button>
                 </div>
             </div>
 
             {/* Mobile Menu */}
             {isMenuOpen && (
-                <div className="md:hidden bg-[var(--color-secondary-dark)] border-t border-[var(--color-dark-300)]">
-                    <div className="px-4 py-6 space-y-4">
-                        {navLinks.map((link) => (
+                <div className="md:hidden absolute top-[72px] left-0 w-full bg-white border-b border-[var(--color-dark-300)] shadow-lg py-6 px-4 flex flex-col gap-4 animate-fade-in">
+                    {navLinks.map((link) => {
+                        const isActive = location.pathname === link.path.split('?')[0] &&
+                            (link.path.includes('?') ? location.search.includes('upcoming') : !location.search.includes('upcoming'));
+
+                        return (
                             <Link
-                                key={link.path}
+                                key={link.name}
                                 to={link.path}
                                 onClick={() => setIsMenuOpen(false)}
-                                className={`block py-2 font-medium ${isActive(link.path) ? 'text-[var(--color-primary)]' : 'text-[var(--color-light-300)]'
+                                className={`text-lg font-bold py-2 px-4 rounded-lg transition-all ${isActive
+                                        ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                                        : 'text-[var(--color-light)]'
                                     }`}
                             >
-                                {link.label}
+                                {link.name}
                             </Link>
-                        ))}
-                        <Link to="/movies" className="btn btn-primary w-full mt-4" onClick={() => setIsMenuOpen(false)}>
-                            Book Now
-                        </Link>
-                    </div>
+                        )
+                    })}
+                    <hr className="border-[var(--color-dark-300)]" />
+                    <Link
+                        to="/my-bookings"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="text-[var(--color-light)] font-medium py-2 px-4"
+                    >
+                        My Bookings
+                    </Link>
+                    <Link
+                        to="/login"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="btn btn-primary w-full justify-center"
+                    >
+                        Login / Sign Up
+                    </Link>
                 </div>
             )}
         </nav>

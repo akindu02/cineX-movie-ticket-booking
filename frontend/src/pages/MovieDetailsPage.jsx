@@ -1,151 +1,215 @@
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { getMovieById } from '../data/movies';
+import { getShowsByMovieId, getAvailableDates, formatShowTime, formatPrice } from '../data/shows';
+import { Star, Clock, Calendar, MapPin, Play, User, ArrowLeft, Info, Video } from 'lucide-react';
 
 const MovieDetailsPage = () => {
     const { id } = useParams();
+    const movie = getMovieById(id);
+    const [selectedDate, setSelectedDate] = useState('');
 
-    // Dummy movie data
-    const movie = {
-        id: parseInt(id),
-        title: "Dune: Part Three",
-        poster: "https://images.unsplash.com/photo-1534809027769-b00d750a6bac?w=800&h=1200&fit=crop",
-        backdrop: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1920&h=1080&fit=crop",
-        rating: 8.9,
-        genre: ["Sci-Fi", "Adventure", "Drama"],
-        duration: "2h 45m",
-        releaseDate: "February 15, 2026",
-        director: "Denis Villeneuve",
-        cast: ["Timothée Chalamet", "Zendaya", "Rebecca Ferguson", "Josh Brolin"],
-        synopsis: "Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family. Facing a choice between the love of his life and the fate of the known universe, he endeavors to prevent a terrible future that only he can foresee.",
-        shows: [
-            { id: 1, time: "10:30 AM", screen: "IMAX", price: 450, availableSeats: 45 },
-            { id: 2, time: "1:45 PM", screen: "Dolby Atmos", price: 350, availableSeats: 32 },
-            { id: 3, time: "4:30 PM", screen: "Premium", price: 300, availableSeats: 58 },
-            { id: 4, time: "7:15 PM", screen: "IMAX", price: 500, availableSeats: 12 },
-            { id: 5, time: "10:00 PM", screen: "Standard", price: 250, availableSeats: 76 },
-        ],
-    };
+    // Derived state for shows
+    const { uniqueDates, showsByCinema, sortedCinemas } = useMemo(() => {
+        if (!movie) return { uniqueDates: [], showsByCinema: {}, sortedCinemas: [] };
+
+        const dates = getAvailableDates(movie.id);
+
+        // Default to first date if not selected
+        const currentSelectedDate = selectedDate || dates[0];
+        if (!selectedDate && dates.length > 0) setSelectedDate(dates[0]);
+
+        const allShows = getShowsByMovieId(movie.id);
+        const filteredShows = allShows.filter(s => s.date === currentSelectedDate);
+
+        // Group by cinema
+        const grouped = {};
+        filteredShows.forEach(show => {
+            if (!grouped[show.cinemaName]) grouped[show.cinemaName] = [];
+            grouped[show.cinemaName].push(show);
+        });
+
+        // Sort cinemas
+        const cinemas = Object.keys(grouped).sort();
+
+        return {
+            uniqueDates: dates,
+            showsByCinema: grouped,
+            sortedCinemas: cinemas
+        };
+    }, [movie, selectedDate]);
+
+    if (!movie) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+                <h2 className="text-2xl font-bold mb-4">Movie not found</h2>
+                <Link to="/movies" className="btn btn-primary">Browse Movies</Link>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="min-h-screen">
-            {/* Hero Section with Backdrop */}
-            <section className="relative h-[70vh] flex items-end">
+        <div className="min-h-screen pb-20">
+            {/* Hero Section */}
+            <div className="relative h-[60vh] md:h-[70vh] w-full">
                 <div
                     className="absolute inset-0 bg-cover bg-center"
-                    style={{ backgroundImage: `url(${movie.backdrop})` }}
+                    style={{ backgroundImage: `url(${movie.backdropUrl})` }}
                 >
-                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-dark)] via-[var(--color-dark)]/70 to-transparent"></div>
+                    <div className="absolute inset-0 bg-[var(--color-dark)]/80 backdrop-blur-[2px]"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-dark)] via-transparent to-transparent"></div>
                 </div>
 
-                <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8 pb-12">
-                    <div className="flex flex-col md:flex-row gap-8 items-end md:items-end">
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                    <div className="max-w-[1200px] w-full grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8 md:gap-16 items-center">
                         {/* Poster */}
-                        <div className="hidden md:block w-64 flex-shrink-0 rounded-xl overflow-hidden shadow-2xl transform -translate-y-16">
-                            <img src={movie.poster} alt={movie.title} className="w-full h-auto" />
+                        <div className="hidden md:block rounded-xl overflow-hidden shadow-2xl shadow-black/50 aspect-[2/3] transform hover:scale-105 transition-transform duration-500">
+                            <img src={movie.posterUrl} alt={movie.title} className="w-full h-full object-cover" />
                         </div>
 
-                        {/* Movie Info */}
-                        <div className="flex-1 animate-slide-up">
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {movie.genre.map((g, i) => (
-                                    <span key={i} className="badge badge-primary">{g}</span>
-                                ))}
+                        {/* Info */}
+                        <div className="text-center md:text-left">
+                            <Link to="/movies" className="inline-flex items-center gap-2 text-[var(--color-light-400)] hover:text-white mb-6 transition-colors">
+                                <ArrowLeft className="w-4 h-4" /> Back to Movies
+                            </Link>
+                            <h1 className="text-4xl md:text-6xl font-bold mb-4">{movie.title}</h1>
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm md:text-base mb-6 text-[var(--color-light-300)]">
+                                <span className="border border-[var(--color-light-400)]/30 rounded px-2 py-0.5">{movie.genres.join(', ')}</span>
+                                <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {Math.floor(movie.durationMins / 60)}h {movie.durationMins % 60}m</span>
+                                <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {new Date(movie.releaseDate).getFullYear()}</span>
+                                <span className="flex items-center gap-1 text-[var(--color-accent)] font-bold"><Star className="w-4 h-4 fill-current" /> {movie.rating}/10</span>
                             </div>
-                            <h1 className="text-4xl md:text-5xl font-bold mb-4">{movie.title}</h1>
-                            <div className="flex flex-wrap items-center gap-4 text-[var(--color-light-300)] mb-6">
-                                <span className="flex items-center gap-1">
-                                    <span className="text-[var(--color-accent)]">⭐</span> {movie.rating}/10
-                                </span>
-                                <span>⏱️ {movie.duration}</span>
-                                <span>📅 {movie.releaseDate}</span>
-                            </div>
-                            <p className="text-lg text-[var(--color-light-300)] max-w-2xl line-clamp-3 md:line-clamp-none">
-                                {movie.synopsis}
+
+                            <p className="text-lg text-[var(--color-light-300)] mb-8 max-w-2xl leading-relaxed">
+                                {movie.description}
                             </p>
+
+                            <div className="flex flex-col md:flex-row gap-4 justify-center md:justify-start">
+                                <button
+                                    onClick={() => document.getElementById('booking-section').scrollIntoView({ behavior: 'smooth' })}
+                                    className="btn btn-primary px-8 py-3 text-lg glow-effect flex items-center justify-center gap-2"
+                                >
+                                    <TicketWrapper /> Book Tickets
+                                </button>
+                                <button className="btn btn-secondary px-8 py-3 text-lg flex items-center justify-center gap-2">
+                                    <Play className="w-5 h-5 fill-current" /> Watch Trailer
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            {/* Details Section */}
-            <section className="py-12 px-4 md:px-8">
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Left Column - Movie Details */}
-                        <div className="lg:col-span-2 space-y-8">
-                            {/* Cast & Crew */}
-                            <div className="bg-glass rounded-2xl p-6">
-                                <h2 className="text-2xl font-semibold mb-6">Cast & Crew</h2>
-
-                                <div className="mb-6">
-                                    <h3 className="text-[var(--color-light-400)] mb-2">Director</h3>
-                                    <p className="text-lg font-medium">{movie.director}</p>
+            <div className="max-w-[1200px] mx-auto px-4 md:px-8 mt-8 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-12">
+                {/* Main Content */}
+                <div>
+                    {/* Cast Section */}
+                    <section className="mb-12">
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <User className="text-[var(--color-primary)]" /> Top Cast
+                        </h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {movie.cast && movie.cast.map((actor, idx) => (
+                                <div key={idx} className="bg-[var(--color-dark-200)] p-4 rounded-xl text-center hover:bg-[var(--color-dark-100)] transition-colors">
+                                    <div className="w-16 h-16 rounded-full bg-[var(--color-dark)] mx-auto mb-3 flex items-center justify-center overflow-hidden">
+                                        <User className="w-8 h-8 text-gray-500" />
+                                    </div>
+                                    <p className="font-semibold text-white">{actor}</p>
                                 </div>
+                            ))}
+                        </div>
+                    </section>
 
-                                <div>
-                                    <h3 className="text-[var(--color-light-400)] mb-3">Cast</h3>
-                                    <div className="flex flex-wrap gap-3">
-                                        {movie.cast.map((actor, i) => (
-                                            <span key={i} className="bg-[var(--color-dark-200)] px-4 py-2 rounded-lg">
-                                                {actor}
-                                            </span>
+                    {/* Booking Section */}
+                    <div id="booking-section" className="scroll-mt-24">
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <Video className="text-[var(--color-primary)]" /> Showtimes
+                        </h2>
+
+                        {/* Date Selector */}
+                        <div className="flex gap-4 overflow-x-auto pb-4 mb-8 scrollbar-hide">
+                            {uniqueDates.map(date => {
+                                const d = new Date(date);
+                                const isSelected = selectedDate === date;
+                                return (
+                                    <button
+                                        key={date}
+                                        onClick={() => setSelectedDate(date)}
+                                        className={`flex flex-col items-center justify-center min-w-[80px] h-[80px] rounded-2xl border transition-all ${isSelected
+                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/25 scale-105'
+                                                : 'bg-[var(--color-dark-200)] border-white/10 text-[var(--color-light-400)] hover:border-[var(--color-primary)] hover:text-white'
+                                            }`}
+                                    >
+                                        <span className="text-xs uppercase font-bold">{d.toLocaleDateString('en-US', { month: 'short' })}</span>
+                                        <span className="text-2xl font-bold">{d.getDate()}</span>
+                                        <span className="text-xs">{d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Shows List */}
+                        <div className="space-y-6">
+                            {sortedCinemas.length > 0 ? sortedCinemas.map(cinemaName => (
+                                <div key={cinemaName} className="bg-[var(--color-dark-200)] rounded-xl p-6 border border-white/5 hover:border-white/10 transition-colors">
+                                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-white/90">
+                                        <MapPin className="text-[var(--color-accent)] w-5 h-5" />
+                                        {cinemaName}
+                                    </h3>
+                                    <div className="flex flex-wrap gap-4">
+                                        {showsByCinema[cinemaName].map(show => (
+                                            <Link
+                                                key={show.id}
+                                                to={`/shows/${show.id}/seats`}
+                                                className="group relative flex flex-col items-center justify-center p-3 rounded-lg border border-[var(--color-light-400)]/30 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-all min-w-[100px]"
+                                            >
+                                                <span className="text-lg font-bold text-white group-hover:text-[var(--color-primary)]">
+                                                    {formatShowTime(show.time)}
+                                                </span>
+                                                <span className="text-xs text-[var(--color-light-400)] uppercase tracking-wider mb-1">
+                                                    {show.screenName}
+                                                </span>
+                                                <span className="text-xs bg-black/20 px-2 py-0.5 rounded text-[var(--color-accent)]">
+                                                    {formatPrice(show.priceLkr)}
+                                                </span>
+                                            </Link>
                                         ))}
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Trailer Placeholder */}
-                            <div className="bg-glass rounded-2xl p-6">
-                                <h2 className="text-2xl font-semibold mb-6">Watch Trailer</h2>
-                                <div className="aspect-video bg-[var(--color-dark-200)] rounded-xl flex items-center justify-center">
-                                    <div className="text-center">
-                                        <div className="w-20 h-20 rounded-full bg-[var(--color-primary)] flex items-center justify-center mx-auto mb-4 cursor-pointer hover:scale-110 transition-transform glow-effect">
-                                            <span className="text-3xl ml-1">▶</span>
-                                        </div>
-                                        <p className="text-[var(--color-light-400)]">Click to play trailer</p>
-                                    </div>
+                            )) : (
+                                <div className="text-center py-12 bg-[var(--color-dark-200)]/50 rounded-xl">
+                                    <Info className="w-12 h-12 mx-auto text-[var(--color-light-400)] mb-4" />
+                                    <p className="text-[var(--color-light-300)]">No shows available for the selected date.</p>
                                 </div>
-                            </div>
+                            )}
                         </div>
+                    </div>
+                </div>
 
-                        {/* Right Column - Show Times */}
-                        <div className="lg:col-span-1">
-                            <div className="bg-glass rounded-2xl p-6 sticky top-24">
-                                <h2 className="text-2xl font-semibold mb-6">Select Showtime</h2>
-
-                                <div className="mb-6">
-                                    <p className="text-[var(--color-light-400)] mb-2">Today</p>
-                                    <p className="font-medium">February 4, 2026</p>
-                                </div>
-
-                                <div className="space-y-3">
-                                    {movie.shows.map((show) => (
-                                        <Link
-                                            key={show.id}
-                                            to={`/shows/${show.id}/seats`}
-                                            className="block bg-[var(--color-dark-200)] hover:bg-[var(--color-dark-300)] rounded-xl p-4 transition-all hover:scale-[1.02] hover:shadow-lg"
-                                        >
-                                            <div className="flex justify-between items-center mb-2">
-                                                <span className="text-xl font-semibold">{show.time}</span>
-                                                <span className="badge badge-accent">{show.screen}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-[var(--color-light-400)]">
-                                                    {show.availableSeats} seats left
-                                                </span>
-                                                <span className="text-[var(--color-primary)] font-semibold">
-                                                    ₹{show.price}
-                                                </span>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
+                {/* Sidebar Details (Genre, Language etc) - Optional extra info */}
+                <div className="space-y-6">
+                    <div className="bg-[var(--color-dark-200)] p-6 rounded-xl border border-white/5">
+                        <h3 className="font-bold mb-4 text-lg">Details</h3>
+                        <div className="space-y-4 text-sm">
+                            <div>
+                                <span className="block text-[var(--color-light-400)] mb-1">Original Language</span>
+                                <span className="font-medium">{movie.language}</span>
+                            </div>
+                            <div>
+                                <span className="block text-[var(--color-light-400)] mb-1">Status</span>
+                                <span className="font-medium text-[var(--color-accent)]">Now Showing</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
         </div>
     );
 };
+
+// Helper simple icon component for Ticket since it was used in map
+const TicketWrapper = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /><path d="M13 5v2" /><path d="M13 17v2" /><path d="M13 11v2" /></svg>
+);
 
 export default MovieDetailsPage;
