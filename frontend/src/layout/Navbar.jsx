@@ -53,7 +53,7 @@ const Navbar = () => {
                     </button>
 
                     <Link
-                        to="/login"
+                        to="/auth/sign-in"
                         className="hidden md:flex btn btn-primary px-6 py-2.5 rounded-full text-sm font-bold shadow-none hover:shadow-lg transition-all"
                     >
                         Login
@@ -93,7 +93,7 @@ const Navbar = () => {
                     <hr className="border-[var(--color-dark-300)]" />
 
                     <Link
-                        to="/login"
+                        to="/auth/sign-in"
                         onClick={() => setIsMenuOpen(false)}
                         className="btn btn-primary w-full justify-center"
                     >

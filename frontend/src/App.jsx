@@ -9,6 +9,8 @@ import CheckoutPage from './pages/CheckoutPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import BookingSuccessPage from './pages/BookingSuccessPage';
 import MyBookingsPage from './pages/MyBookingsPage';
+import SignInPage from './pages/SignInPage';
+import SignUpPage from './pages/SignUpPage';
 import AboutUsPage from './pages/AboutUsPage';
 
 function App() {
@@ -26,6 +28,10 @@ function App() {
       />
       <Router>
         <Routes>
+          {/* Auth Routes - No Layout */}
+          <Route path="/auth/sign-in" element={<SignInPage />} />
+          <Route path="/auth/sign-up" element={<SignUpPage />} />
+
           <Route path="/" element={<MainLayout />}>
             <Route index element={<HomePage />} />
             <Route path="movies" element={<MoviesPage />} />
