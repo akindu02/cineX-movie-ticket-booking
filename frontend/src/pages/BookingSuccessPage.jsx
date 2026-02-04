@@ -41,14 +41,12 @@ const BookingSuccessPage = () => {
         <div className="min-h-screen bg-gray-50 pt-20 px-4 flex flex-col items-center justify-center">
 
             <div className="w-full max-w-5xl">
-                {/* Header Text */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4 ring-8 ring-green-50">
-                        <CheckCircle className="w-8 h-8 text-green-600" strokeWidth={3} />
-                    </div>
-                    <h1 className="text-3xl font-black text-[var(--color-light)] mb-2">You're all set!</h1>
-                    <p className="text-gray-500">A confirmation email has been sent to you.</p>
+                {/* Success Banner */}
+                <div className="flex items-center justify-center gap-2 mb-8 text-green-600 font-bold bg-green-50 py-3 px-6 rounded-full w-fit mx-auto border border-green-100 shadow-sm animate-fade-in-up">
+                    <CheckCircle className="w-5 h-5 fill-current" />
+                    <span>Payment Successful! Your booking is confirmed.</span>
                 </div>
+
 
                 {/* Landscape Ticket */}
                 <div className="bg-white rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden relative border border-gray-100 min-h-[400px]">
