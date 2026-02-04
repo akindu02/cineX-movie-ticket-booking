@@ -57,24 +57,14 @@ const AboutUsPage = () => {
             </div>
 
             {/* Story */}
-            <div className="bg-[var(--color-dark-200)] rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center gap-12 border border-white/5">
-                <div className="flex-1">
-                    <h2 className="text-3xl font-bold mb-6">Our Story</h2>
-                    <p className="text-[var(--color-light-300)] mb-4 leading-relaxed">
-                        Founded in 2024, CineX started with a simple question: "Why is booking a movie ticket still so complicated?"
-                    </p>
-                    <p className="text-[var(--color-light-300)] leading-relaxed">
-                        What began as a small project has now grown into the country's most loved entertainment platform. We are a team of movie buffs, tech geeks, and design enthusiasts working together to redefine how you experience entertainment.
-                    </p>
-                </div>
-                <div className="flex-1 relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-primary)] to-purple-600 blur-3xl opacity-20 rounded-full"></div>
-                    <img
-                        src="https://images.unsplash.com/photo-1517604931442-71053e3e2c3c?w=800&h=600&fit=crop"
-                        alt="Cinema Hall"
-                        className="relative rounded-2xl shadow-2xl border border-white/10"
-                    />
-                </div>
+            <div className="bg-[var(--color-dark-200)] rounded-3xl p-8 md:p-12 text-center border border-white/5 max-w-4xl mx-auto">
+                <h2 className="text-3xl font-bold mb-6">Our Story</h2>
+                <p className="text-[var(--color-light-300)] mb-4 leading-relaxed">
+                    Founded in 2024, CineX started with a simple question: "Why is booking a movie ticket still so complicated?"
+                </p>
+                <p className="text-[var(--color-light-300)] leading-relaxed">
+                    What began as a small project has now grown into the country's most loved entertainment platform. We are a team of movie buffs, tech geeks, and design enthusiasts working together to redefine how you experience entertainment.
+                </p>
             </div>
         </div>
     );
