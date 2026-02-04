@@ -1,37 +1,12 @@
 import { Link } from 'react-router-dom';
+import { movies } from '../data/movies';
 
 const HomePage = () => {
-    // Featured movies data
-    const featuredMovies = [
-        {
-            id: 1,
-            title: "Dune: Part Three",
-            poster: "https://images.unsplash.com/photo-1534809027769-b00d750a6bac?w=400&h=600&fit=crop",
-            rating: 8.9,
-            genre: "Sci-Fi",
-        },
-        {
-            id: 2,
-            title: "The Dark Knight Returns",
-            poster: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=400&h=600&fit=crop",
-            rating: 9.1,
-            genre: "Action",
-        },
-        {
-            id: 3,
-            title: "Inception 2",
-            poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop",
-            rating: 8.7,
-            genre: "Thriller",
-        },
-        {
-            id: 4,
-            title: "Avatar: The Final Chapter",
-            poster: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=400&h=600&fit=crop",
-            rating: 8.5,
-            genre: "Adventure",
-        },
-    ];
+    // Get first 4 movies as featured
+    const featuredMovies = movies.slice(0, 4);
+
+    // Get top rated movies
+    const topRated = [...movies].sort((a, b) => b.rating - a.rating).slice(0, 4);
 
     return (
         <div className="min-h-screen">
@@ -41,7 +16,7 @@ const HomePage = () => {
                 <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                     style={{
-                        backgroundImage: "url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1920&q=80')",
+                        backgroundImage: `url('${movies[0].backdropUrl}')`,
                     }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-dark)]/70 via-[var(--color-dark)]/50 to-[var(--color-dark)]"></div>
@@ -96,7 +71,7 @@ const HomePage = () => {
                             >
                                 <div className="relative overflow-hidden aspect-[2/3]">
                                     <img
-                                        src={movie.poster}
+                                        src={movie.posterUrl}
                                         alt={movie.title}
                                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                     />
@@ -104,10 +79,63 @@ const HomePage = () => {
                                     <div className="absolute top-3 right-3 badge badge-accent">
                                         ⭐ {movie.rating}
                                     </div>
+                                    <div className="absolute top-3 left-3 badge badge-primary">
+                                        {movie.language}
+                                    </div>
+                                </div>
+                                <div className="p-4">
+                                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">{movie.title}</h3>
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                        {movie.genres.slice(0, 2).map((genre, i) => (
+                                            <span key={i} className="text-xs text-[var(--color-light-400)]">
+                                                {genre}{i < Math.min(movie.genres.length, 2) - 1 ? ' •' : ''}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <span className="text-sm text-[var(--color-light-400)]">
+                                        ⏱️ {Math.floor(movie.durationMins / 60)}h {movie.durationMins % 60}m
+                                    </span>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Top Rated Section */}
+            <section className="py-20 px-4 md:px-8 bg-[var(--color-secondary-dark)]/50">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex justify-between items-center mb-12">
+                        <div>
+                            <h2 className="text-3xl md:text-4xl font-bold mb-2">Top Rated</h2>
+                            <p className="text-[var(--color-light-400)]">Highest rated movies this month</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {topRated.map((movie, index) => (
+                            <Link
+                                key={movie.id}
+                                to={`/movies/${movie.id}`}
+                                className="card group relative"
+                            >
+                                <div className="absolute top-3 left-3 z-10 w-10 h-10 bg-[var(--color-primary)] rounded-full flex items-center justify-center font-bold text-lg">
+                                    #{index + 1}
+                                </div>
+                                <div className="relative overflow-hidden aspect-[2/3]">
+                                    <img
+                                        src={movie.posterUrl}
+                                        alt={movie.title}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-dark)] via-transparent to-transparent"></div>
+                                    <div className="absolute top-3 right-3 badge badge-accent">
+                                        ⭐ {movie.rating}
+                                    </div>
                                 </div>
                                 <div className="p-4">
                                     <h3 className="font-semibold text-lg mb-1 line-clamp-2">{movie.title}</h3>
-                                    <span className="badge badge-primary">{movie.genre}</span>
+                                    <span className="text-sm text-[var(--color-light-400)]">{movie.genres[0]}</span>
                                 </div>
                             </Link>
                         ))}
@@ -116,7 +144,7 @@ const HomePage = () => {
             </section>
 
             {/* Features Section */}
-            <section className="py-20 px-4 md:px-8 bg-[var(--color-secondary-dark)]/50">
+            <section className="py-20 px-4 md:px-8">
                 <div className="max-w-7xl mx-auto">
                     <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
                         Why Choose <span className="text-gradient">CineX</span>?
@@ -154,7 +182,7 @@ const HomePage = () => {
             </section>
 
             {/* CTA Section */}
-            <section className="py-20 px-4 md:px-8">
+            <section className="py-20 px-4 md:px-8 bg-[var(--color-secondary-dark)]/50">
                 <div className="max-w-4xl mx-auto text-center">
                     <h2 className="text-3xl md:text-4xl font-bold mb-6">
                         Ready for Your Next Movie Night?
