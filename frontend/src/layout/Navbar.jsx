@@ -36,8 +36,8 @@ const Navbar = () => {
                                 key={link.name}
                                 to={link.path}
                                 className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${isActive
-                                        ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10'
-                                        : 'text-[var(--color-light)] hover:text-[var(--color-primary)] hover:bg-gray-50'
+                                    ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                                    : 'text-[var(--color-light)] hover:text-[var(--color-primary)] hover:bg-gray-50'
                                     }`}
                             >
                                 {link.name}
@@ -82,8 +82,8 @@ const Navbar = () => {
                                 to={link.path}
                                 onClick={() => setIsMenuOpen(false)}
                                 className={`text-lg font-bold py-2 px-4 rounded-lg transition-all ${isActive
-                                        ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/5'
-                                        : 'text-[var(--color-light)]'
+                                    ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                                    : 'text-[var(--color-light)]'
                                     }`}
                             >
                                 {link.name}
@@ -91,13 +91,7 @@ const Navbar = () => {
                         )
                     })}
                     <hr className="border-[var(--color-dark-300)]" />
-                    <Link
-                        to="/my-bookings"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="text-[var(--color-light)] font-medium py-2 px-4"
-                    >
-                        My Bookings
-                    </Link>
+
                     <Link
                         to="/login"
                         onClick={() => setIsMenuOpen(false)}

@@ -29,7 +29,7 @@ const Footer = () => {
                         <ul className="space-y-3 text-sm text-gray-400">
                             <li><Link to="/movies" className="hover:text-[var(--color-primary)] transition-colors">Now Showing</Link></li>
                             <li><Link to="/movies?filter=upcoming" className="hover:text-[var(--color-primary)] transition-colors">Coming Soon</Link></li>
-                            <li><Link to="/my-bookings" className="hover:text-[var(--color-primary)] transition-colors">My Bookings</Link></li>
+
                         </ul>
                     </div>
 
