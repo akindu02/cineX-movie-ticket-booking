@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getMovieById } from '../data/movies';
 import { getShowsByMovieId, getAvailableDates, formatShowTime, formatPrice } from '../data/shows';
-import { Star, Clock, Calendar, MapPin, Play, ArrowLeft, Video, Ticket } from 'lucide-react';
+import { Star, Clock, Calendar, MapPin, Play, ArrowLeft, Video, Ticket, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const MovieDetailsPage = () => {
     const { id } = useParams();
@@ -108,82 +108,194 @@ const MovieDetailsPage = () => {
                     </div>
 
                     {/* RIGHT COLUMN: Booking Flow */}
-                    <div className="lg:col-span-8 xl:col-span-9 bg-gray-50/50 rounded-3xl p-6 md:p-8 border border-gray-100">
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold flex items-center gap-2 text-[var(--color-light)] mb-6">
-                                <Ticket className="text-[var(--color-primary)]" /> Book Tickets
-                            </h2>
+                    <div className="lg:col-span-8 xl:col-span-9">
+                        <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.05)] border border-gray-100/50">
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-[var(--color-light)] flex items-center gap-2">
+                                        <Calendar className="w-6 h-6 text-[var(--color-primary)]" />
+                                        Select Date
+                                    </h2>
+                                    <p className="text-sm text-gray-400 mt-1">Choose the perfect time for your movie</p>
+                                </div>
+                                {/* Optional: Month Display or Navigation Arrows could go here */}
+                            </div>
 
-                            {/* Date Selector */}
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Select Date</h3>
-                            <div className="flex gap-4 overflow-x-auto pb-4 mb-8 scrollbar-hide">
-                                {uniqueDates.map(date => {
-                                    const d = new Date(date);
-                                    const isSelected = selectedDate === date;
-                                    return (
+                            {/* Date Selector - Full Calendar */}
+                            <div className="mb-8">
+                                <CalendarView
+                                    availableDates={uniqueDates}
+                                    selectedDate={selectedDate}
+                                    onSelectDate={setSelectedDate}
+                                />
+                            </div>
+
+                            <div className="mt-8 mb-6 flex items-center gap-4">
+                                <h3 className="text-lg font-bold text-[var(--color-light)]">Available Cinemas</h3>
+                                <div className="h-px bg-gray-100 flex-grow"></div>
+                            </div>
+
+                            {/* Shows List - Clean Cards */}
+                            <div className="space-y-6">
+                                {sortedCinemas.length > 0 ? sortedCinemas.map(cinemaName => (
+                                    <div key={cinemaName} className="group/cinema bg-gray-50/50 hover:bg-white rounded-2xl p-6 border border-gray-100 hover:border-red-100 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                                        <h3 className="text-base font-bold mb-4 flex items-center gap-3 text-[var(--color-light)]">
+                                            <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-[var(--color-primary)] border border-gray-100 group-hover/cinema:border-red-100 group-hover/cinema:scale-110 transition-all">
+                                                <MapPin className="w-5 h-5" />
+                                            </div>
+                                            {cinemaName}
+                                        </h3>
+                                        <div className="flex flex-wrap gap-3 pl-2 sm:pl-13">
+                                            {showsByCinema[cinemaName].map(show => (
+                                                <Link
+                                                    key={show.id}
+                                                    to={`/shows/${show.id}/seats`}
+                                                    className="relative overflow-hidden flex flex-col items-center justify-center px-6 py-3 rounded-xl bg-white border-2 border-transparent hover:border-[var(--color-primary)] shadow-sm hover:shadow-md transition-all min-w-[110px] group/time"
+                                                >
+                                                    <span className="text-lg font-bold text-[var(--color-light)] group-hover/time:text-[var(--color-primary)] transition-colors z-10">
+                                                        {formatShowTime(show.time)}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider z-10 group-hover/time:text-red-400">
+                                                        {show.screenName}
+                                                    </span>
+
+                                                    {/* Price Tag Badge */}
+                                                    <div className="absolute top-0 right-0 bg-gray-100 text-[9px] font-bold text-gray-500 px-1.5 py-0.5 rounded-bl-lg group-hover/time:bg-[var(--color-primary)] group-hover/time:text-white transition-colors">
+                                                        {formatPrice(show.priceLkr)}
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                                        <div className="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center shadow-sm mb-4">
+                                            <Calendar className="w-8 h-8 text-gray-300" />
+                                        </div>
+                                        <p className="text-gray-500 font-medium text-lg">No shows available for this date.</p>
                                         <button
-                                            key={date}
-                                            onClick={() => setSelectedDate(date)}
-                                            className={`flex flex-col items-center justify-center min-w-[80px] h-[80px] rounded-2xl border transition-all duration-300 ${isSelected
-                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg shadow-red-200 transform -translate-y-1'
-                                                : 'bg-white border-gray-200 text-[var(--color-light-400)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
-                                                }`}
+                                            onClick={() => setSelectedDate(uniqueDates[0])}
+                                            className="mt-4 px-6 py-2 bg-white border border-gray-200 rounded-full text-[var(--color-primary)] font-bold text-sm hover:shadow-md transition-all"
                                         >
-                                            <span className="text-xs uppercase font-bold tracking-wider opacity-90">{d.toLocaleDateString('en-US', { month: 'short' })}</span>
-                                            <span className="text-2xl font-bold my-0.5">{d.getDate()}</span>
-                                            <span className="text-xs font-medium opacity-90">{d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                                            View Next Available
                                         </button>
-                                    );
-                                })}
+                                    </div>
+                                )}
                             </div>
                         </div>
-
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Available Showtimes</h3>
-
-                        {/* Shows List */}
-                        <div className="space-y-6">
-                            {sortedCinemas.length > 0 ? sortedCinemas.map(cinemaName => (
-                                <div key={cinemaName} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[var(--color-light)] border-b border-gray-50 pb-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                                            <MapPin className="w-4 h-4" />
-                                        </div>
-                                        {cinemaName}
-                                    </h3>
-                                    <div className="flex flex-wrap gap-3">
-                                        {showsByCinema[cinemaName].map(show => (
-                                            <Link
-                                                key={show.id}
-                                                to={`/shows/${show.id}/seats`}
-                                                className="group relative flex flex-col items-center justify-center px-6 py-3 rounded-xl border border-gray-200 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 transition-all min-w-[120px]"
-                                            >
-                                                <span className="text-xl font-bold text-[var(--color-light)] group-hover:text-[var(--color-primary)]">
-                                                    {formatShowTime(show.time)}
-                                                </span>
-                                                <span className="text-[10px] text-[var(--color-light-400)] uppercase tracking-wider mb-1 font-semibold">
-                                                    {show.screenName}
-                                                </span>
-                                                <span className="absolute -top-2 -right-2 text-[10px] bg-gray-900 text-white px-2 py-0.5 rounded-full shadow-sm">
-                                                    {formatPrice(show.priceLkr)}
-                                                </span>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
-                                    <Calendar className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                                    <p className="text-gray-500 font-medium">No shows available for this date.</p>
-                                    <button
-                                        onClick={() => setSelectedDate(uniqueDates[0])}
-                                        className="mt-4 text-[var(--color-primary)] font-bold text-sm hover:underline"
-                                    >
-                                        View available dates
-                                    </button>
-                                </div>
-                            )}
-                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const CalendarView = ({ availableDates, selectedDate, onSelectDate }) => {
+    // Initialize with selected date or today
+    const [currentMonth, setCurrentMonth] = useState(() => {
+        return selectedDate ? new Date(selectedDate) : new Date();
+    });
+
+    const getDaysInMonth = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        return new Date(year, month + 1, 0).getDate();
+    };
+
+    const getFirstDayOfMonth = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        return new Date(year, month, 1).getDay();
+    };
+
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const firstDay = getFirstDayOfMonth(currentMonth);
+    const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const handlePrevMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    };
+
+    const handleNextMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    };
+
+    const days = [];
+    // Empty cells for padding
+    for (let i = 0; i < firstDay; i++) {
+        days.push(<div key={`empty-${i}`} className="h-10 md:h-12"></div>);
+    }
+
+    // Date cells
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), d);
+        // Format to YYYY-MM-DD for comparison
+        // Note: We need to handle timezone visual consistency. 
+        // Simple way: create string from manual parts to avoid UTC shift
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(d).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+
+        const isAvailable = availableDates.includes(dateStr);
+        const isSelected = selectedDate === dateStr;
+        const isPast = dateObj < new Date(new Date().setHours(0, 0, 0, 0));
+
+        days.push(
+            <button
+                key={dateStr}
+                disabled={!isAvailable}
+                onClick={() => isAvailable && onSelectDate(dateStr)}
+                className={`
+                    h-10 md:h-12 rounded-lg flex items-center justify-center text-sm font-bold transition-all relative
+                    ${isSelected
+                        ? 'bg-[var(--color-primary)] text-white shadow-md shadow-red-200'
+                        : isAvailable
+                            ? 'hover:bg-red-50 hover:text-[var(--color-primary)] text-gray-700 bg-gray-50'
+                            : 'text-gray-300 cursor-not-allowed bg-transparent'
+                    }
+                `}
+            >
+                {d}
+                {isAvailable && !isSelected && (
+                    <div className="absolute bottom-1 w-1 h-1 rounded-full bg-green-500"></div>
+                )}
+            </button>
+        );
+    }
+
+    return (
+        <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+                <button onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600">
+                    <ChevronLeft className="w-5 h-5" />
+                </button>
+                <h3 className="font-bold text-lg text-[var(--color-light)]">{monthName}</h3>
+                <button onClick={handleNextMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600">
+                    <ChevronRight className="w-5 h-5" />
+                </button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-2 mb-2 text-center">
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                    <div key={day} className="text-xs font-bold text-gray-400 uppercase tracking-wide py-2">
+                        {day}
+                    </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2">
+                {days}
+            </div>
+
+            <div className="flex items-center gap-4 mt-4 text-xs font-medium text-gray-400 justify-end">
+                <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    Available
+                </div>
+                <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                    Unavailable
                 </div>
             </div>
         </div>
