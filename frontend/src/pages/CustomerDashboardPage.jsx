@@ -34,8 +34,8 @@ const CustomerDashboardPage = () => {
                             JD
                         </div>
                         <div>
-                            <h2 className="font-bold text-[var(--color-light)]">John Doe</h2>
-                            <p className="text-xs text-gray-500">Member since 2024</p>
+                            <h2 className="font-bold text-[var(--color-light)]">User Name</h2>
+                            <p className="text-xs text-gray-500">Member</p>
                         </div>
                     </div>
 
@@ -107,7 +107,7 @@ const OverviewSection = ({ setActiveSection }) => {
         <div className="animate-fade-in space-y-8">
             <div className="bg-gradient-to-r from-[var(--color-primary)] to-[#ff6b6b] rounded-3xl p-8 text-white shadow-xl shadow-red-200 relative overflow-hidden">
                 <div className="relative z-10">
-                    <h1 className="text-3xl font-bold mb-2">Welcome back, John! 👋</h1>
+                    <h1 className="text-3xl font-bold mb-2">Welcome back! 👋</h1>
                     <p className="text-white/80 mb-6">You have 2 upcoming shows to watch.</p>
                     <button
                         onClick={() => setActiveSection('bookings')}
@@ -241,54 +241,81 @@ const MyBookingsSection = () => {
 
 const ManageAccountSection = () => {
     return (
-        <div className="animate-fade-in max-w-2xl">
+        <div className="animate-fade-in w-full">
             <h2 className="text-2xl font-bold text-[var(--color-light)] mb-6">Manage Account</h2>
 
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm space-y-8">
-                {/* Profile Photo */}
-                <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center text-2xl font-bold border-4 border-white shadow-lg">
-                        JD
-                    </div>
-                    <div>
-                        <button className="text-sm font-bold text-[var(--color-primary)] hover:underline mb-1">Change Photo</button>
-                        <p className="text-xs text-gray-400">Allowed JPG, GIF or PNG. Max size of 800K</p>
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-500 mb-2">First Name</label>
-                            <input type="text" defaultValue="John" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium" />
+            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-12">
+                    {/* Left Column: Profile & Personal Details */}
+                    <div className="xl:col-span-2 space-y-8">
+                        {/* Profile Photo Row */}
+                        <div className="flex items-center gap-6 pb-8 border-b border-gray-100">
+                            <div className="w-24 h-24 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center text-3xl font-bold border-4 border-white shadow-xl shadow-red-50">
+                                JD
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-[var(--color-light)]">Profile Picture</h3>
+                                <div className="flex gap-4 mt-2">
+                                    <button className="text-sm font-bold text-white bg-[var(--color-primary)] px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                                        Upload New
+                                    </button>
+                                    <button className="text-sm font-bold text-gray-400 hover:text-red-500 px-4 py-2 rounded-lg border border-gray-200 hover:border-red-200 transition-colors">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-500 mb-2">Last Name</label>
-                            <input type="text" defaultValue="Doe" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium" />
+
+                        {/* Personal Info Form */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-500 mb-2">First Name</label>
+                                <input type="text" defaultValue="User" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-500 mb-2">Last Name</label>
+                                <input type="text" defaultValue="Name" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white" />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-bold text-gray-500 mb-2">Email Address</label>
+                                <input type="email" defaultValue="user@example.com" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white" />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-bold text-gray-500 mb-2">Phone Number</label>
+                                <input type="tel" defaultValue="" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white" />
+                            </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-500 mb-2">Email Address</label>
-                        <input type="email" defaultValue="john.doe@example.com" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium" />
-                    </div>
+                    {/* Right Column: Security & Actions */}
+                    <div className="xl:col-span-1 border-t xl:border-t-0 xl:border-l border-gray-100 pt-8 xl:pt-0 xl:pl-12 flex flex-col h-full">
+                        <h3 className="font-bold text-lg mb-6 flex items-center gap-2 text-[var(--color-light)]">
+                            <Shield className="w-5 h-5 text-[var(--color-primary)]" />
+                            Security
+                        </h3>
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-500 mb-2">Phone Number</label>
-                        <input type="tel" defaultValue="+94 77 123 4567" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium" />
-                    </div>
-                </div>
+                        <div className="space-y-4 mb-8 flex-grow">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-500 mb-2">Current Password</label>
+                                <input type="password" placeholder="••••••••" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-500 mb-2">New Password</label>
+                                <input type="password" placeholder="••••••••" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white" />
+                            </div>
+                        </div>
 
-                <div className="pt-6 border-t border-gray-100">
-                    <h3 className="font-bold text-lg mb-4">Change Password</h3>
-                    <div className="space-y-4">
-                        <input type="password" placeholder="Current Password" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium" />
-                        <input type="password" placeholder="New Password" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium" />
+                        <div className="pt-6 border-t border-gray-100">
+                            <div className="flex flex-col gap-3">
+                                <button className="btn btn-primary w-full py-4 rounded-xl shadow-lg shadow-red-500/20 font-bold text-base">
+                                    Save Changes
+                                </button>
+                                <button className="w-full py-3 rounded-xl font-bold text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors text-sm">
+                                    Discard
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <div className="flex justify-end pt-4">
-                    <button className="btn btn-primary px-8 py-3 rounded-xl shadow-lg shadow-red-500/20">Save Changes</button>
                 </div>
             </div>
         </div>
