@@ -11,6 +11,7 @@ import BookingSuccessPage from './pages/BookingSuccessPage';
 import MyBookingsPage from './pages/MyBookingsPage';
 import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
+import CustomerDashboardPage from './pages/CustomerDashboardPage';
 import AboutUsPage from './pages/AboutUsPage';
 
 function App() {
@@ -40,6 +41,7 @@ function App() {
             <Route path="checkout" element={<CheckoutPage />} />
             <Route path="booking-success" element={<BookingSuccessPage />} />
             <Route path="my-bookings" element={<MyBookingsPage />} />
+            <Route path="dashboard" element={<CustomerDashboardPage />} />
 
             <Route path="about" element={<AboutUsPage />} />
             <Route path="admin" element={<AdminDashboardPage />} />

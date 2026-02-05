@@ -43,6 +43,11 @@ const CheckoutPage = () => {
             formattedValue = value.replace(/\D/g, '').slice(0, 16);
         }
 
+        // CVV validation: Strict 3 digits only
+        if (name === 'cvc') {
+            formattedValue = value.replace(/\D/g, '').slice(0, 3);
+        }
+
         setFormData(prev => ({ ...prev, [name]: formattedValue }));
     };
 
@@ -57,7 +62,7 @@ const CheckoutPage = () => {
         if (paymentMethod === 'card') {
             const cleanCardNum = formData.cardNumber.replace(/\s/g, '');
             const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
-            const cvcRegex = /^\d{3,4}$/;
+            const cvcRegex = /^\d{3}$/;
 
             if (!cleanCardNum || !formData.expiry || !formData.cvc) {
                 toast.error("Please fill in all card details");
@@ -75,7 +80,7 @@ const CheckoutPage = () => {
             }
 
             if (!cvcRegex.test(formData.cvc)) {
-                toast.error("Invalid CVC. Must be 3 or 4 digits.");
+                toast.error("Invalid CVV. Must be 3 digits.");
                 return;
             }
         }
@@ -224,6 +229,8 @@ const CheckoutPage = () => {
                                                     name="cvc"
                                                     value={formData.cvc}
                                                     onChange={handleInputChange}
+                                                    maxLength={3}
+                                                    inputMode="numeric"
                                                     className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-red-500/10 transition-all font-medium text-gray-900"
                                                     placeholder="123"
                                                 />
