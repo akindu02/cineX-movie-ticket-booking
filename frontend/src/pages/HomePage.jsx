@@ -23,7 +23,7 @@ const HomePage = () => {
     }, [heroImages.length]);
 
     return (
-        <div className="min-h-screen pb-20 pt-20">
+        <div className="min-h-screen pb-20">
             {/* Full-width Slideshow Hero Section */}
             <section className="relative w-full h-[600px] md:h-[700px] overflow-hidden bg-black">
                 {/* Background Images Layer */}
