@@ -36,7 +36,14 @@ const CheckoutPage = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        let formattedValue = value;
+
+        // Card validation: Strict 16 digits for card number
+        if (name === 'cardNumber') {
+            formattedValue = value.replace(/\D/g, '').slice(0, 16);
+        }
+
+        setFormData(prev => ({ ...prev, [name]: formattedValue }));
     };
 
     const handleSubmit = (e) => {
@@ -47,9 +54,30 @@ const CheckoutPage = () => {
             return;
         }
 
-        if (paymentMethod === 'card' && (!formData.cardNumber || !formData.cvc)) {
-            toast.error("Please fill in your card details");
-            return;
+        if (paymentMethod === 'card') {
+            const cleanCardNum = formData.cardNumber.replace(/\s/g, '');
+            const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
+            const cvcRegex = /^\d{3,4}$/;
+
+            if (!cleanCardNum || !formData.expiry || !formData.cvc) {
+                toast.error("Please fill in all card details");
+                return;
+            }
+
+            if (!/^\d{16}$/.test(cleanCardNum)) {
+                toast.error("Invalid card number. Must be 16 digits.");
+                return;
+            }
+
+            if (!expiryRegex.test(formData.expiry)) {
+                toast.error("Invalid expiry date. Use MM/YY format.");
+                return;
+            }
+
+            if (!cvcRegex.test(formData.cvc)) {
+                toast.error("Invalid CVC. Must be 3 or 4 digits.");
+                return;
+            }
         }
 
         const processPromise = new Promise((resolve) => setTimeout(resolve, 2000));
@@ -103,7 +131,7 @@ const CheckoutPage = () => {
                                             value={formData.email}
                                             onChange={handleInputChange}
                                             className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-[var(--color-primary)] focus:bg-white focus:ring-4 focus:ring-red-500/10 transition-all font-medium text-gray-900"
-                                            placeholder="john@example.com"
+                                            placeholder="your@email.com"
                                         />
                                     </div>
                                 </div>
