@@ -247,19 +247,16 @@ const CalendarView = ({ availableDates, selectedDate, onSelectDate }) => {
                 disabled={!isAvailable}
                 onClick={() => isAvailable && onSelectDate(dateStr)}
                 className={`
-                    h-10 md:h-12 rounded-lg flex items-center justify-center text-sm font-bold transition-all relative
+                    h-10 md:h-12 rounded-lg flex items-center justify-center text-sm font-bold transition-all relative border
                     ${isSelected
-                        ? 'bg-[var(--color-primary)] text-white shadow-md shadow-red-200'
+                        ? 'bg-[var(--color-primary)] text-white shadow-md shadow-red-200 border-transparent'
                         : isAvailable
-                            ? 'hover:bg-red-50 hover:text-[var(--color-primary)] text-gray-700 bg-gray-50'
-                            : 'text-gray-300 cursor-not-allowed bg-transparent'
+                            ? 'bg-gradient-to-br from-green-50 to-green-100 text-green-700 border-green-200 hover:shadow-sm hover:from-green-100 hover:to-green-200'
+                            : 'text-gray-300 cursor-not-allowed bg-transparent border-transparent'
                     }
                 `}
             >
                 {d}
-                {isAvailable && !isSelected && (
-                    <div className="absolute bottom-1 w-1 h-1 rounded-full bg-green-500"></div>
-                )}
             </button>
         );
     }
@@ -290,7 +287,7 @@ const CalendarView = ({ availableDates, selectedDate, onSelectDate }) => {
 
             <div className="flex items-center gap-4 mt-4 text-xs font-medium text-gray-400 justify-end">
                 <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <div className="w-3 h-3 rounded bg-gradient-to-br from-green-50 to-green-100 border border-green-200"></div>
                     Available
                 </div>
                 <div className="flex items-center gap-1">

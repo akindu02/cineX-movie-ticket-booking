@@ -155,8 +155,11 @@
 /* ===== Utility Classes ===== */
 @layer utilities {
   .text-gradient {
-    color: var(--color-primary);
-    /* Simplified for clean look */
+    background: linear-gradient(to right, var(--color-primary), var(--color-primary-light));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
   }
 
   .bg-glass {

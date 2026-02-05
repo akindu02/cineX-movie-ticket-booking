@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { movies } from '../data/movies';
 import { shows, formatPrice, formatShowTime, getAllCinemas } from '../data/shows';
-import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, DollarSign, Calendar, TrendingUp } from 'lucide-react';
+import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, DollarSign, Calendar, TrendingUp, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboardPage = () => {
@@ -70,8 +70,8 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
     <button
         onClick={onClick}
         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${active
-                ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold'
-                : 'text-[var(--color-light-300)] hover:bg-white/5 hover:text-white'
+            ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold'
+            : 'text-[var(--color-light-300)] hover:bg-white/5 hover:text-white'
             }`}
     >
         <Icon className="w-5 h-5" />
