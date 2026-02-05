@@ -104,29 +104,28 @@ const SignInPage = () => {
             </div>
 
             {/* Right Side: Form */}
-            <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 lg:p-24 bg-white overflow-y-auto">
-                <div className="w-full max-w-md space-y-10">
+            <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 bg-white overflow-y-auto">
+                <div className="w-full max-w-sm space-y-6">
 
                     {/* Header (Matching User Request) */}
                     <div className="text-center">
-                        <Link to="/" className="inline-block group mb-6">
-                            <div className="text-6xl font-extrabold tracking-tighter flex items-center justify-center gap-0.5 group-hover:scale-105 transition-transform duration-300">
+                        <Link to="/" className="inline-block group mb-4">
+                            <div className="text-4xl font-extrabold tracking-tighter flex items-center justify-center gap-0.5 group-hover:scale-105 transition-transform duration-300">
                                 <span className="text-[var(--color-primary)]">Cine</span>
                                 <span className="text-[var(--color-light)]">X</span>
                             </div>
                         </Link>
-                        <p className="text-xs font-bold text-gray-400 tracking-[0.3em] uppercase mb-10">Your Seat to the Big Screen</p>
 
                         <div className="text-left">
-                            <h2 className="text-3xl font-black text-gray-900 mb-2">Welcome back</h2>
-                            <p className="text-gray-500 text-lg">Sign in to continue booking</p>
+                            <h2 className="text-2xl font-black text-gray-900 mb-1">Welcome back</h2>
+                            <p className="text-gray-500 text-sm">Sign in to continue booking</p>
                         </div>
                     </div>
 
                     {/* Google Login */}
                     <button
                         onClick={handleGoogleLogin}
-                        className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-4 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 focus:ring-4 focus:ring-gray-100 focus:outline-none group shadow-sm"
+                        className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 focus:ring-4 focus:ring-gray-100 focus:outline-none group shadow-sm text-sm"
                     >
                         <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -143,7 +142,7 @@ const SignInPage = () => {
                         <div className="h-px bg-gray-100 flex-1"></div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-gray-700">Email Address</label>
                             <div className="relative group">
@@ -153,7 +152,7 @@ const SignInPage = () => {
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className={`w-full bg-gray-50 border ${errors.email ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded-xl py-4 pl-12 pr-4 font-medium outline-none focus:bg-white focus:border-[var(--color-primary)] focus:ring-4 focus:ring-red-500/10 transition-all`}
+                                    className={`w-full bg-gray-50 border ${errors.email ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded-xl py-3 pl-12 pr-4 font-medium outline-none focus:bg-white focus:border-[var(--color-primary)] focus:ring-4 focus:ring-red-500/10 transition-all text-sm`}
                                     placeholder="Enter your email"
                                 />
                             </div>
@@ -172,7 +171,7 @@ const SignInPage = () => {
                                     name="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    className={`w-full bg-gray-50 border ${errors.password ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded-xl py-4 pl-12 pr-12 font-medium outline-none focus:bg-white focus:border-[var(--color-primary)] focus:ring-4 focus:ring-red-500/10 transition-all`}
+                                    className={`w-full bg-gray-50 border ${errors.password ? 'border-red-500 bg-red-50' : 'border-gray-200'} rounded-xl py-3 pl-12 pr-12 font-medium outline-none focus:bg-white focus:border-[var(--color-primary)] focus:ring-4 focus:ring-red-500/10 transition-all text-sm`}
                                     placeholder="Enter your password"
                                 />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -194,7 +193,7 @@ const SignInPage = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full btn btn-primary py-4 rounded-xl text-lg font-bold shadow-xl shadow-red-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                            className="w-full btn btn-primary py-3 rounded-xl text-base font-bold shadow-xl shadow-red-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                         >
                             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Log In'}
                         </button>
