@@ -105,22 +105,10 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
 const OverviewSection = ({ setActiveSection }) => {
     return (
         <div className="animate-fade-in space-y-8">
-            <div className="bg-gradient-to-r from-[var(--color-primary)] to-[#ff6b6b] rounded-3xl p-8 text-white shadow-xl shadow-red-200 relative overflow-hidden">
-                <div className="relative z-10">
-                    <h1 className="text-3xl font-bold mb-2">Welcome back! 👋</h1>
-                    <p className="text-white/80 mb-6">You have 2 upcoming shows to watch.</p>
-                    <button
-                        onClick={() => setActiveSection('bookings')}
-                        className="bg-white text-[var(--color-primary)] px-6 py-2.5 rounded-full font-bold text-sm hover:shadow-lg transition-all"
-                    >
-                        View My Bookings
-                    </button>
-                </div>
-                {/* Decorative circles */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+            <div>
+                <h1 className="text-3xl font-bold text-[var(--color-light)]">Dashboard Overview</h1>
+                <p className="text-gray-500 mt-1">Welcome back! Here's what's happening today.</p>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatsCard icon={Ticket} label="Total Bookings" value="12" color="bg-blue-50 text-blue-600" />
                 <StatsCard icon={Calendar} label="Upcoming Shows" value="2" color="bg-orange-50 text-orange-600" />
