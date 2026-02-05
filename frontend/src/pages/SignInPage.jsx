@@ -48,7 +48,7 @@ const SignInPage = () => {
         setTimeout(() => {
             setIsLoading(false);
             toast.success('Signed in successfully!');
-            navigate('/');
+            navigate('/dashboard');
         }, 1500);
     };
 

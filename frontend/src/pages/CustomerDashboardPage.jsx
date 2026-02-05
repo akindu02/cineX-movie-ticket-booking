@@ -1,11 +1,17 @@
 import { useState } from 'react';
 import { LayoutGrid, Ticket, User, LogOut, CreditCard, Bell, Settings, Shield } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { formatShowTime } from '../data/shows';
 import { MapPin, Calendar, Clock, Download, ArrowUpRight, CheckCircle, X } from 'lucide-react';
 
 const CustomerDashboardPage = () => {
     const [activeSection, setActiveSection] = useState('overview');
+    const navigate = useNavigate();
+
+    const handleSignOut = () => {
+        // Here you would typically clear auth context/storage
+        navigate('/');
+    };
 
     const renderContent = () => {
         switch (activeSection) {
@@ -59,7 +65,10 @@ const CustomerDashboardPage = () => {
                             <SidebarItem icon={Bell} label="Notifications" />
                             <SidebarItem icon={Settings} label="Settings" />
                             <SidebarItem icon={Shield} label="Privacy" />
-                            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all font-medium mt-4">
+                            <button
+                                onClick={handleSignOut}
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all font-medium mt-4"
+                            >
                                 <LogOut className="w-5 h-5" />
                                 Sign Out
                             </button>
