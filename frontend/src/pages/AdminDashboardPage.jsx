@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 
 const AdminDashboardPage = () => {
     const [activeSection, setActiveSection] = useState('overview');
+    const [isAddShowModalOpen, setIsAddShowModalOpen] = useState(false);
     const navigate = useNavigate();
 
     const handleSignOut = () => {
@@ -36,18 +37,24 @@ const AdminDashboardPage = () => {
     const renderContent = () => {
         switch (activeSection) {
             case 'movies':
-                return <MoviesSection onDelete={(id) => handleDelete(id, 'Movie')} />;
+                return <MoviesSection onDelete={(id) => handleDelete(id, 'Movie')} onAddMovie={() => setIsAddShowModalOpen(true)} />;
             case 'shows':
-                return <ShowsSection onDelete={(id) => handleDelete(id, 'Show')} />;
+                return <ShowsSection onDelete={(id) => handleDelete(id, 'Show')} onAddShow={() => setIsAddShowModalOpen(true)} />;
             case 'bookings':
                 return <BookingsSection />;
             default:
-                return <OverviewSection stats={stats} setActiveSection={setActiveSection} />;
+                return <OverviewSection stats={stats} setActiveSection={setActiveSection} onAddMovie={() => setIsAddShowModalOpen(true)} />;
         }
     };
 
     return (
         <div className="flex min-h-screen pt-20 bg-[var(--color-dark-100)]">
+            <AddShowModal
+                isOpen={isAddShowModalOpen}
+                onClose={() => setIsAddShowModalOpen(false)}
+                movies={movies}
+            />
+
             {/* Sidebar */}
             <aside className="w-64 bg-white border-r border-gray-100 fixed h-[calc(100vh-80px)] hidden lg:block overflow-y-auto">
                 <div className="p-6">
@@ -128,7 +135,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
 
 /* --- Sub-Sections --- */
 
-const OverviewSection = ({ stats, setActiveSection }) => {
+const OverviewSection = ({ stats, setActiveSection, onAddMovie }) => {
     return (
         <div className="animate-fade-in space-y-8">
             <div className="flex justify-between items-center">
@@ -137,7 +144,7 @@ const OverviewSection = ({ stats, setActiveSection }) => {
                     <p className="text-gray-500 mt-1">Welcome back, Admin! Here's what's happening today.</p>
                 </div>
                 <button
-                    onClick={() => setActiveSection('movies')}
+                    onClick={onAddMovie}
                     className="btn btn-primary shadow-lg shadow-red-500/20"
                 >
                     <Plus className="w-5 h-5" /> Add New Movie
@@ -202,7 +209,7 @@ const OverviewSection = ({ stats, setActiveSection }) => {
     );
 };
 
-const MoviesSection = ({ onDelete }) => {
+const MoviesSection = ({ onDelete, onAddMovie }) => {
     const [search, setSearch] = useState('');
     const filteredMovies = movies.filter(m => m.title.toLowerCase().includes(search.toLowerCase()));
 
@@ -213,7 +220,10 @@ const MoviesSection = ({ onDelete }) => {
                     <h2 className="text-2xl font-bold text-[var(--color-light)]">Movies</h2>
                     <p className="text-gray-500 text-sm">Manage your movie catalog</p>
                 </div>
-                <button className="btn btn-primary px-6 py-2.5 rounded-xl shadow-lg shadow-red-500/20 flex items-center gap-2 font-bold">
+                <button
+                    onClick={onAddMovie}
+                    className="btn btn-primary px-6 py-2.5 rounded-xl shadow-lg shadow-red-500/20 flex items-center gap-2 font-bold"
+                >
                     <Plus className="w-5 h-5" /> Add Movie
                 </button>
             </div>
@@ -285,7 +295,7 @@ const MoviesSection = ({ onDelete }) => {
     );
 };
 
-const ShowsSection = ({ onDelete }) => {
+const ShowsSection = ({ onDelete, onAddShow }) => {
     return (
         <div className="animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -293,7 +303,10 @@ const ShowsSection = ({ onDelete }) => {
                     <h2 className="text-2xl font-bold text-[var(--color-light)]">Shows</h2>
                     <p className="text-gray-500 text-sm">Schedule and manage screenings</p>
                 </div>
-                <button className="btn btn-primary px-6 py-2.5 rounded-xl shadow-lg shadow-red-500/20 flex items-center gap-2 font-bold">
+                <button
+                    onClick={onAddShow}
+                    className="btn btn-primary px-6 py-2.5 rounded-xl shadow-lg shadow-red-500/20 flex items-center gap-2 font-bold"
+                >
                     <Plus className="w-5 h-5" /> Add Show
                 </button>
             </div>
@@ -391,8 +404,8 @@ const BookingsSection = () => {
                                 <td className="px-6 py-4 font-bold text-sm">{formatPrice(booking.total)}</td>
                                 <td className="px-6 py-4">
                                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${booking.status === 'Confirmed' ? 'bg-green-50 text-green-600' :
-                                            booking.status === 'Completed' ? 'bg-blue-50 text-blue-600' :
-                                                'bg-red-50 text-red-600'
+                                        booking.status === 'Completed' ? 'bg-blue-50 text-blue-600' :
+                                            'bg-red-50 text-red-600'
                                         }`}>
                                         {booking.status}
                                     </span>
@@ -408,5 +421,81 @@ const BookingsSection = () => {
         </div>
     );
 };
+
+const AddShowModal = ({ isOpen, onClose, movies }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-lg mx-4 shadow-2xl relative overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 className="text-xl font-bold text-[var(--color-light)]">Schedule New Show</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
+
+                <form className="p-6 space-y-6">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Select Movie</label>
+                        <select className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600">
+                            <option value="">Select a movie...</option>
+                            {movies.map(movie => (
+                                <option key={movie.id} value={movie.id}>{movie.title}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Date</label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input type="date" className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Time</label>
+                            <div className="relative">
+                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input type="time" className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Film Hall (Cinema)</label>
+                        <select className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600">
+                            <option value="">Select cinema hall...</option>
+                            <option value="Scope Cinemas - Colombo City Centre">Scope Cinemas - CCC (Dolby Atmos)</option>
+                            <option value="PVR Cinemas - One Galle Face">PVR Cinemas - OGF (LUXE)</option>
+                            <option value="Liberty by Scope Cinemas">Liberty by Scope (4K Laser)</option>
+                            <option value="Savoy Premiere">Savoy Premiere (3D)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Ticket Price (LKR)</label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">LKR</span>
+                            <input type="number" placeholder="2500" className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600" />
+                        </div>
+                    </div>
+
+                    <div className="pt-4 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" className="flex-1 btn btn-primary py-3 rounded-xl shadow-lg shadow-red-500/20 font-bold">
+                            Add Schedule
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+import { X } from 'lucide-react'; // Import X icon
 
 export default AdminDashboardPage;
