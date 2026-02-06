@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Menu, User, X } from 'lucide-react';
+import { Search, Menu, User, X, LayoutGrid } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 
 const Navbar = () => {
@@ -62,7 +62,15 @@ const Navbar = () => {
                     </SignedOut>
 
                     <SignedIn>
-                        <UserButton afterSignOutUrl="/" />
+                        <UserButton afterSignOutUrl="/">
+                            <UserButton.MenuItems>
+                                <UserButton.Link
+                                    label="Dashboard"
+                                    labelIcon={<LayoutGrid size={15} />}
+                                    href="/post-sign-in"
+                                />
+                            </UserButton.MenuItems>
+                        </UserButton>
                     </SignedIn>
 
                     {/* Mobile Menu Button */}
@@ -112,7 +120,15 @@ const Navbar = () => {
                     <SignedIn>
                         <div className="flex items-center gap-3 px-4 py-2">
                             <span className="text-sm font-medium text-[var(--color-light)]">Manage Account:</span>
-                            <UserButton afterSignOutUrl="/" />
+                            <UserButton afterSignOutUrl="/">
+                                <UserButton.MenuItems>
+                                    <UserButton.Link
+                                        label="Dashboard"
+                                        labelIcon={<LayoutGrid size={15} />}
+                                        href="/post-sign-in"
+                                    />
+                                </UserButton.MenuItems>
+                            </UserButton>
                         </div>
                     </SignedIn>
                 </div>
