@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Search, Menu, User, X } from 'lucide-react';
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -52,12 +53,17 @@ const Navbar = () => {
                         <Search className="w-5 h-5" />
                     </button>
 
-                    <Link
-                        to="/auth/sign-in"
-                        className="hidden md:flex btn btn-primary px-6 py-2.5 rounded-full text-sm font-bold shadow-none hover:shadow-lg transition-all"
-                    >
-                        Login
-                    </Link>
+                    <SignedOut>
+                        <SignInButton mode="modal">
+                            <button className="hidden md:flex btn btn-primary px-6 py-2.5 rounded-full text-sm font-bold shadow-none hover:shadow-lg transition-all">
+                                Login
+                            </button>
+                        </SignInButton>
+                    </SignedOut>
+
+                    <SignedIn>
+                        <UserButton afterSignOutUrl="/" />
+                    </SignedIn>
 
                     {/* Mobile Menu Button */}
                     <button
@@ -92,13 +98,23 @@ const Navbar = () => {
                     })}
                     <hr className="border-[var(--color-dark-300)]" />
 
-                    <Link
-                        to="/auth/sign-in"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="btn btn-primary w-full justify-center"
-                    >
-                        Login / Sign Up
-                    </Link>
+                    <SignedOut>
+                        <SignInButton mode="modal">
+                            <button
+                                onClick={() => setIsMenuOpen(false)}
+                                className="btn btn-primary w-full justify-center"
+                            >
+                                Login / Sign Up
+                            </button>
+                        </SignInButton>
+                    </SignedOut>
+
+                    <SignedIn>
+                        <div className="flex items-center gap-3 px-4 py-2">
+                            <span className="text-sm font-medium text-[var(--color-light)]">Manage Account:</span>
+                            <UserButton afterSignOutUrl="/" />
+                        </div>
+                    </SignedIn>
                 </div>
             )}
         </nav>
