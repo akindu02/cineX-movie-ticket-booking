@@ -58,15 +58,7 @@ const AdminDashboardPage = () => {
             {/* Sidebar */}
             <aside className="w-64 bg-white border-r border-gray-100 fixed h-[calc(100vh-80px)] hidden lg:block overflow-y-auto">
                 <div className="p-6">
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="w-12 h-12 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center font-bold text-xl border border-[var(--color-primary)]/20">
-                            AD
-                        </div>
-                        <div>
-                            <h2 className="font-bold text-[var(--color-light)]">Admin</h2>
-                            <p className="text-xs text-gray-500">Administrator</p>
-                        </div>
-                    </div>
+
 
                     <nav className="space-y-1">
                         <SidebarItem
@@ -97,7 +89,7 @@ const AdminDashboardPage = () => {
 
                     <div className="mt-8 pt-8 border-t border-gray-100">
                         <nav className="space-y-1">
-                            <SidebarItem icon={Settings} label="Settings" />
+
                             <button
                                 onClick={handleSignOut}
                                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all font-medium mt-4"
@@ -168,9 +160,9 @@ const OverviewSection = ({ stats, setActiveSection, onAddMovie }) => {
                 ))}
             </div>
 
-            {/* Recent Activity / Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+            {/* Recent Activity */}
+            <div className="grid grid-cols-1 gap-8">
+                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                     <h2 className="text-lg font-bold text-[var(--color-light)] mb-6">Recent Bookings</h2>
                     <div className="space-y-4">
                         {[1, 2, 3, 4, 5].map((_, i) => (
@@ -187,21 +179,6 @@ const OverviewSection = ({ stats, setActiveSection, onAddMovie }) => {
                                 <span className="text-xs font-mono text-gray-400">{i * 5 + 2} mins ago</span>
                             </div>
                         ))}
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm h-fit">
-                    <h2 className="text-lg font-bold text-[var(--color-light)] mb-6">Quick Actions</h2>
-                    <div className="space-y-3">
-                        <button onClick={() => setActiveSection('movies')} className="w-full flex items-centerGap-3 p-3 text-left rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600 hover:text-[var(--color-primary)]">
-                            <Film className="w-4 h-4 mr-3" /> Add New Movie
-                        </button>
-                        <button onClick={() => setActiveSection('shows')} className="w-full flex items-center gap-3 p-3 text-left rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600 hover:text-[var(--color-primary)]">
-                            <Monitor className="w-4 h-4 mr-3" /> Schedule Show
-                        </button>
-                        <button onClick={() => setActiveSection('bookings')} className="w-full flex items-center gap-3 p-3 text-left rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600 hover:text-[var(--color-primary)]">
-                            <Search className="w-4 h-4 mr-3" /> Search Booking
-                        </button>
                     </div>
                 </div>
             </div>
