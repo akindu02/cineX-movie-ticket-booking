@@ -18,6 +18,8 @@ createRoot(document.getElementById('root')).render(
       publishableKey={PUBLISHABLE_KEY}
       afterSignInUrl="/post-sign-in"
       afterSignUpUrl="/post-sign-in"
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
     ><App />
     </ClerkProvider>
   </StrictMode >,
