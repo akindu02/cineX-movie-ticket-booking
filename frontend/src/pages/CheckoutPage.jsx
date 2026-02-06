@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { formatPrice, getShowById, formatShowTime } from '../data/shows';
 import { getMovieById } from '../data/movies';
-import { CreditCard, Wallet, Mail, Phone, Lock, Calendar, Clock, MapPin, ArrowLeft, CheckCircle, Ticket } from 'lucide-react';
+import { CreditCard, Mail, Phone, Lock, Calendar, Clock, MapPin, ArrowLeft, CheckCircle, Ticket } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CheckoutPage = () => {
@@ -174,16 +174,6 @@ const CheckoutPage = () => {
                                 >
                                     <CreditCard className="w-5 h-5" />
                                     <span className="font-bold">Card</span>
-                                </button>
-                                <button
-                                    onClick={() => setPaymentMethod('wallet')}
-                                    className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all min-w-[160px] ${paymentMethod === 'wallet'
-                                        ? 'bg-red-50 border-[var(--color-primary)] text-[var(--color-primary)] shadow-sm'
-                                        : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    <Wallet className="w-5 h-5" />
-                                    <span className="font-bold">Wallet</span>
                                 </button>
                             </div>
 
