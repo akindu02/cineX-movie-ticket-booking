@@ -54,7 +54,7 @@ const Navbar = () => {
                     </button>
 
                     <SignedOut>
-                        <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                        <SignInButton mode="modal" forceRedirectUrl="/post-sign-in">
                             <button className="hidden md:flex btn btn-primary px-6 py-2.5 rounded-full text-sm font-bold shadow-none hover:shadow-lg transition-all">
                                 Login
                             </button>
@@ -107,7 +107,7 @@ const Navbar = () => {
                     <hr className="border-[var(--color-dark-300)]" />
 
                     <SignedOut>
-                        <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                        <SignInButton mode="modal" forceRedirectUrl="/post-sign-in">
                             <button
                                 onClick={() => setIsMenuOpen(false)}
                                 className="btn btn-primary w-full justify-center"
