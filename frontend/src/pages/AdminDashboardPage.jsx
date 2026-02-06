@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { movies } from '../data/movies';
 import { shows, formatPrice, formatShowTime, getAllCinemas } from '../data/shows';
-import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, DollarSign, Calendar, TrendingUp, Clock, LogOut, Bell, Settings, Shield } from 'lucide-react';
+import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, Coins, Calendar, TrendingUp, Clock, LogOut, Bell, Settings, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboardPage = () => {
@@ -23,7 +23,7 @@ const AdminDashboardPage = () => {
         }, 0);
 
         return [
-            { label: 'Total Revenue', value: formatPrice(totalRevenue), change: '+12%', icon: DollarSign, color: 'bg-green-50 text-green-600' },
+            { label: 'Total Revenue', value: formatPrice(totalRevenue), change: '+12%', icon: Coins, color: 'bg-green-50 text-green-600' },
             { label: 'Active Movies', value: totalMovies, change: '+3', icon: Film, color: 'bg-blue-50 text-blue-600' },
             { label: 'Total Shows', value: totalShows, change: '+24', icon: Monitor, color: 'bg-purple-50 text-purple-600' },
             { label: 'Bookings Today', value: '1,240', change: '+18%', icon: Ticket, color: 'bg-orange-50 text-orange-600' },
