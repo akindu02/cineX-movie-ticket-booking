@@ -1,26 +1,63 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getMovieById } from '../data/movies';
-import { getShowsByMovieId, getAvailableDates, formatShowTime, formatPrice } from '../data/shows';
-import { Star, Clock, Calendar, MapPin, Play, ArrowLeft, Video, Ticket, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getMovieById, getMovieShows } from '../services/api';
+import { formatShowTime, formatPrice } from '../data/shows'; // Keep helpers
+import { Star, Clock, Calendar, MapPin, Play, ArrowLeft, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const MovieDetailsPage = () => {
     const { id } = useParams();
-    const movie = getMovieById(id);
+    const [movie, setMovie] = useState(null);
+    const [shows, setShows] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [selectedDate, setSelectedDate] = useState('');
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const [movieData, showsData] = await Promise.all([
+                    getMovieById(id),
+                    getMovieShows(id)
+                ]);
+                setMovie(movieData);
+                setShows(showsData);
+            } catch (err) {
+                console.error("Failed to fetch details:", err);
+                setError("Failed to load movie details.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [id]);
 
     // Derived state for shows
     const { uniqueDates, showsByCinema, sortedCinemas } = useMemo(() => {
-        if (!movie) return { uniqueDates: [], showsByCinema: {}, sortedCinemas: [] };
+        if (!movie || shows.length === 0) return { uniqueDates: [], showsByCinema: {}, sortedCinemas: [] };
 
-        const dates = getAvailableDates(movie.id);
+        // Process shows to extract dates and format
+        // API returns start_time as ISO string. We need YYYY-MM-DD for date grouping.
+        const processedShows = shows.map(show => {
+            const dateObj = new Date(show.start_time);
+            return {
+                ...show,
+                date: dateObj.toISOString().split('T')[0], // YYYY-MM-DD
+                time: show.start_time, // Keep full string for helper
+                cinemaName: show.cinema ? show.cinema.name : 'Unknown Cinema',
+                screenName: show.screen_name,
+                priceLkr: show.ticket_price
+            };
+        });
+
+        const dates = [...new Set(processedShows.map(s => s.date))].sort();
 
         // Default to first date if not selected
         const currentSelectedDate = selectedDate || dates[0];
-        if (!selectedDate && dates.length > 0) setSelectedDate(dates[0]);
+        // Only set default if we haven't selected one yet, OR if the selected one is not in the new list (unlikely unless ID changed)
+        // Actually, we should probably sync selectedDate when dates change
 
-        const allShows = getShowsByMovieId(movie.id);
-        const filteredShows = allShows.filter(s => s.date === currentSelectedDate);
+        const filteredShows = processedShows.filter(s => s.date === currentSelectedDate);
 
         // Group by cinema
         const grouped = {};
@@ -37,12 +74,27 @@ const MovieDetailsPage = () => {
             showsByCinema: grouped,
             sortedCinemas: cinemas
         };
-    }, [movie, selectedDate]);
+    }, [movie, shows, selectedDate]);
 
-    if (!movie) return (
+    // Effect to set default selected date once dates are available
+    useEffect(() => {
+        if (uniqueDates.length > 0 && !selectedDate) {
+            setSelectedDate(uniqueDates[0]);
+        }
+    }, [uniqueDates, selectedDate]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex justify-center items-center bg-white">
+                <Loader className="w-10 h-10 animate-spin text-[var(--color-primary)]" />
+            </div>
+        );
+    }
+
+    if (error || !movie) return (
         <div className="min-h-screen flex items-center justify-center bg-white">
             <div className="text-center">
-                <h2 className="text-2xl font-bold mb-4 text-[var(--color-light)]">Movie not found</h2>
+                <h2 className="text-2xl font-bold mb-4 text-[var(--color-light)]">{error || "Movie not found"}</h2>
                 <Link to="/movies" className="btn btn-primary">Browse Movies</Link>
             </div>
         </div>
@@ -63,7 +115,7 @@ const MovieDetailsPage = () => {
                             {/* Poster */}
                             <div className="rounded-2xl overflow-hidden shadow-2xl shadow-gray-200 border border-gray-100 bg-white p-1">
                                 <img
-                                    src={movie.posterUrl}
+                                    src={movie.poster_url || "https://via.placeholder.com/300x450"}
                                     alt={movie.title}
                                     className="w-full h-auto aspect-[2/3] object-cover rounded-xl"
                                 />
@@ -74,14 +126,16 @@ const MovieDetailsPage = () => {
                                 <h1 className="text-3xl font-bold text-[var(--color-light)] mb-3 leading-tight">{movie.title}</h1>
 
                                 <div className="flex flex-wrap gap-2 mb-4">
-                                    <span className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] px-3 py-1 rounded-full text-xs font-bold border border-[var(--color-primary)]/20">
-                                        {movie.genres[0]}
-                                    </span>
+                                    {movie.genres && movie.genres.map((g, i) => (
+                                        <span key={i} className="bg-[var(--color-primary)]/10 text-[var(--color-primary)] px-3 py-1 rounded-full text-xs font-bold border border-[var(--color-primary)]/20">
+                                            {g.genre}
+                                        </span>
+                                    ))}
                                     <span className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold border border-yellow-200">
                                         <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" /> {movie.rating}
                                     </span>
                                     <span className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">
-                                        <Clock className="w-3 h-3" /> {Math.floor(movie.durationMins / 60)}h {movie.durationMins % 60}m
+                                        <Clock className="w-3 h-3" /> {Math.floor(movie.duration_mins / 60)}h {movie.duration_mins % 60}m
                                     </span>
                                 </div>
 
@@ -91,12 +145,12 @@ const MovieDetailsPage = () => {
 
                                 <div className="space-y-3 text-sm border-t border-gray-100 pt-4">
                                     <div className="flex justify-between">
-                                        <span className="text-gray-400">Director</span>
-                                        <span className="font-medium text-[var(--color-light)]">{movie.director}</span>
-                                    </div>
-                                    <div className="flex justify-between">
                                         <span className="text-gray-400">Language</span>
                                         <span className="font-medium text-[var(--color-light)]">{movie.language}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-400">Release Date</span>
+                                        <span className="font-medium text-[var(--color-light)]">{movie.release_date}</span>
                                     </div>
                                 </div>
 
@@ -148,8 +202,8 @@ const MovieDetailsPage = () => {
                                         <div className="flex flex-wrap gap-3 pl-2 sm:pl-13">
                                             {showsByCinema[cinemaName].map(show => (
                                                 <Link
-                                                    key={show.id}
-                                                    to={`/shows/${show.id}/seats`}
+                                                    key={show.show_id}
+                                                    to={`/shows/${show.show_id}/seats`}
                                                     className="relative overflow-hidden flex flex-col items-center justify-center px-6 py-3 rounded-xl bg-white border-2 border-transparent hover:border-[var(--color-primary)] shadow-sm hover:shadow-md transition-all min-w-[110px] group/time"
                                                 >
                                                     <span className="text-lg font-bold text-[var(--color-light)] group-hover/time:text-[var(--color-primary)] transition-colors z-10">
@@ -174,7 +228,9 @@ const MovieDetailsPage = () => {
                                         </div>
                                         <p className="text-gray-500 font-medium text-lg">No shows available for this date.</p>
                                         <button
-                                            onClick={() => setSelectedDate(uniqueDates[0])}
+                                            onClick={() => {
+                                                if (uniqueDates.length > 0) setSelectedDate(uniqueDates[0]);
+                                            }}
                                             className="mt-4 px-6 py-2 bg-white border border-gray-200 rounded-full text-[var(--color-primary)] font-bold text-sm hover:shadow-md transition-all"
                                         >
                                             View Next Available

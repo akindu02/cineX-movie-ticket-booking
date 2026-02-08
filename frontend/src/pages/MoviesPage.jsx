@@ -1,10 +1,18 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { movies, getAllGenres, getAllLanguages, searchMovies } from '../data/movies';
-import { Search, Filter, Clock, Star, Ticket } from 'lucide-react';
+import { getMovies } from '../services/api';
+// We still import static lists for filter dropdowns for now, or we could fetch them too. 
+// For simplicity, let's keep static categories for filters but dynamic movies.
+import { getAllGenres, getAllLanguages } from '../data/movies';
+import { Search, Filter, Clock, Star, Ticket, Loader } from 'lucide-react';
 
 const MoviesPage = () => {
     const location = useLocation();
+    const [movies, setMovies] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Filters State
     const [activeGenre, setActiveGenre] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedLanguage, setSelectedLanguage] = useState('All');
@@ -13,41 +21,61 @@ const MoviesPage = () => {
     const genres = ['All', ...getAllGenres()];
     const languages = ['All', ...getAllLanguages()];
 
-    // Reset filters
+    // Fetch Movies on Mount
+    useEffect(() => {
+        const fetchMovies = async () => {
+            try {
+                setLoading(true);
+                const data = await getMovies();
+                setMovies(data);
+            } catch (err) {
+                console.error("Failed to fetch movies:", err);
+                setError("Failed to load movies. Please check your connection.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMovies();
+    }, []);
+
+    // Reset filters on URL change
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         if (params.get('filter') === 'upcoming') {
             setSortBy('newest');
         } else {
-            setSortBy('popularity');
+            setSortBy('newest'); // default to newest for now
         }
         setActiveGenre('All');
         setSearchQuery('');
         setSelectedLanguage('All');
     }, [location.search]);
 
-    // Filter logic
+    // Client-side Filtering Logic (simulated for now, can be moved to server-side later)
     const filteredMovies = useMemo(() => {
         let result = movies;
         const params = new URLSearchParams(location.search);
         const isUpcomingFilter = params.get('filter') === 'upcoming';
 
         if (searchQuery) {
-            result = searchMovies(searchQuery);
+            result = result.filter(m => m.title.toLowerCase().includes(searchQuery.toLowerCase()));
         }
 
         if (isUpcomingFilter) {
             const today = new Date();
-            const futureMovies = result.filter(m => new Date(m.releaseDate) > today);
+            const futureMovies = result.filter(m => new Date(m.release_date) > today);
             if (futureMovies.length === 0) {
-                result = [...result].sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate)).slice(0, 8);
+                // If no future movies, show all
+                result = [...result].sort((a, b) => new Date(b.release_date) - new Date(a.release_date));
             } else {
                 result = futureMovies;
             }
         }
 
         if (activeGenre !== 'All') {
-            result = result.filter(m => m.genres.includes(activeGenre));
+            // Updated: genres is list of objects {genre: "Name"}
+            result = result.filter(m => m.genres.some(g => g.genre === activeGenre));
         }
 
         if (selectedLanguage !== 'All') {
@@ -55,13 +83,35 @@ const MoviesPage = () => {
         }
 
         return [...result].sort((a, b) => {
-            if (sortBy === 'rating') return b.rating - a.rating;
-            if (sortBy === 'newest') return new Date(b.releaseDate) - new Date(a.releaseDate);
-            return 0; // Default popularity
+            if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+            if (sortBy === 'newest') return new Date(b.release_date) - new Date(a.release_date);
+            return 0; // Default
         });
-    }, [searchQuery, activeGenre, selectedLanguage, sortBy, location.search]);
+    }, [movies, searchQuery, activeGenre, selectedLanguage, sortBy, location.search]);
 
     const isUpcoming = new URLSearchParams(location.search).get('filter') === 'upcoming';
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex justify-center items-center pt-20 text-[var(--color-light)]">
+                <Loader className="w-10 h-10 animate-spin text-[var(--color-primary)]" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen flex flex-col justify-center items-center pt-20 text-[var(--color-light)]">
+                <p className="text-red-500 font-bold text-xl mb-4">{error}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="btn btn-primary"
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="pt-24 pb-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen">
@@ -100,8 +150,8 @@ const MoviesPage = () => {
                                 key={genre}
                                 onClick={() => setActiveGenre(genre)}
                                 className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${activeGenre === genre
-                                        ? 'bg-[var(--color-primary)] text-white shadow-md shadow-red-200'
-                                        : 'bg-[var(--color-dark-100)] text-[var(--color-light-300)] hover:bg-[var(--color-dark-200)] hover:text-[var(--color-light)]'
+                                    ? 'bg-[var(--color-primary)] text-white shadow-md shadow-red-200'
+                                    : 'bg-[var(--color-dark-100)] text-[var(--color-light-300)] hover:bg-[var(--color-dark-200)] hover:text-[var(--color-light)]'
                                     }`}
                             >
                                 {genre}
@@ -142,13 +192,13 @@ const MoviesPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                     {filteredMovies.map((movie) => (
                         <Link
-                            key={movie.id}
-                            to={`/movies/${movie.id}`}
+                            key={movie.movie_id}
+                            to={`/movies/${movie.movie_id}`}
                             className="bg-white rounded-xl overflow-hidden hover:-translate-y-2 transition-all duration-300 shadow-md hover:shadow-xl border border-[var(--color-dark-300)] group h-full flex flex-col"
                         >
                             <div className="relative aspect-[2/3] overflow-hidden bg-gray-100">
                                 <img
-                                    src={movie.posterUrl}
+                                    src={movie.poster_url || "https://via.placeholder.com/300x450"} // Use poster_url
                                     alt={movie.title}
                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                 />
@@ -165,10 +215,10 @@ const MoviesPage = () => {
                             <div className="p-4 flex flex-col flex-grow">
                                 <h3 className="font-bold text-lg mb-1 line-clamp-1 text-[var(--color-light)] group-hover:text-[var(--color-primary)] transition-colors">{movie.title}</h3>
                                 <div className="flex justify-between items-center text-sm text-[var(--color-light-400)] mt-auto">
-                                    <span>{movie.genres[0]}</span>
+                                    <span>{movie.genres && movie.genres.length > 0 ? movie.genres[0].genre : 'Movie'}</span>
                                     <div className="flex items-center gap-1">
                                         <Clock className="w-3 h-3" />
-                                        <span>{Math.floor(movie.durationMins / 60)}h {movie.durationMins % 60}m</span>
+                                        <span>{Math.floor(movie.duration_mins / 60)}h {movie.duration_mins % 60}m</span>
                                     </div>
                                 </div>
                             </div>
