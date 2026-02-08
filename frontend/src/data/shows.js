@@ -76,6 +76,19 @@ export const getAvailableDates = (movieId) => {
 };
 
 export const formatShowTime = (time) => {
+    if (!time) return '';
+
+    // Handle ISO datetime string (e.g., "2026-02-10T14:30:00")
+    if (time.includes('T') || time.includes('-')) {
+        const date = new Date(time);
+        const h = date.getHours();
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${minutes} ${ampm}`;
+    }
+
+    // Handle simple time string (e.g., "14:30")
     const [hours, minutes] = time.split(':');
     const h = parseInt(hours);
     const ampm = h >= 12 ? 'PM' : 'AM';

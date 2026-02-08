@@ -1,14 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { formatPrice, getShowById, formatShowTime } from '../data/shows';
-import { getMovieById } from '../data/movies';
-import { CreditCard, Mail, Phone, Lock, Calendar, Clock, MapPin, ArrowLeft, CheckCircle, Ticket } from 'lucide-react';
+import { formatPrice, formatShowTime } from '../data/shows';
+import { getShowById, getMovieById, createBooking } from '../services/api';
+import { useUser } from '@clerk/clerk-react';
+import { CreditCard, Mail, Phone, Lock, Calendar, Clock, MapPin, ArrowLeft, CheckCircle, Ticket, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CheckoutPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { user, isLoaded } = useUser();
     const { showId, selectedSeats, totalPrice } = location.state || {};
+
+    const [show, setShow] = useState(null);
+    const [movie, setMovie] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
 
     const [paymentMethod, setPaymentMethod] = useState('card');
     const [formData, setFormData] = useState({
@@ -20,6 +27,39 @@ const CheckoutPage = () => {
         cvc: ''
     });
 
+    // Fetch show and movie data
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!showId) return;
+            try {
+                setLoading(true);
+                const showData = await getShowById(showId);
+                setShow(showData);
+
+                if (showData.movie_id) {
+                    const movieData = await getMovieById(showData.movie_id);
+                    setMovie(movieData);
+                }
+            } catch (err) {
+                console.error("Failed to fetch show/movie:", err);
+                toast.error("Failed to load booking details");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [showId]);
+
+    // Pre-fill email from Clerk user
+    useEffect(() => {
+        if (isLoaded && user) {
+            setFormData(prev => ({
+                ...prev,
+                email: user.primaryEmailAddress?.emailAddress || ''
+            }));
+        }
+    }, [isLoaded, user]);
+
     if (!location.state) {
         return (
             <div className="min-h-screen flex items-center justify-center flex-col gap-4 bg-gray-50">
@@ -29,8 +69,14 @@ const CheckoutPage = () => {
         );
     }
 
-    const show = getShowById(showId);
-    const movie = show ? getMovieById(show.movieId) : null;
+    if (loading) {
+        return (
+            <div className="min-h-screen flex justify-center items-center bg-gray-50">
+                <Loader className="w-10 h-10 animate-spin text-[var(--color-primary)]" />
+            </div>
+        );
+    }
+
     const bookingFee = selectedSeats.length * 150;
     const ticketTotal = totalPrice - bookingFee;
 
@@ -51,7 +97,7 @@ const CheckoutPage = () => {
         setFormData(prev => ({ ...prev, [name]: formattedValue }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!formData.email || !formData.phone) {
@@ -85,26 +131,44 @@ const CheckoutPage = () => {
             }
         }
 
-        const processPromise = new Promise((resolve) => setTimeout(resolve, 2000));
+        // Submit booking to API
+        setSubmitting(true);
 
-        toast.promise(processPromise, {
-            loading: 'Processing payment...',
-            success: 'Booking confirmed!',
-            error: 'Payment failed'
-        }).then(() => {
+        const bookingPayload = {
+            show_id: showId,
+            user_id: user?.id || 'guest',
+            seat_numbers: selectedSeats,
+            total_amount: totalPrice,
+            contact_email: formData.email,
+            contact_phone: formData.phone
+        };
+
+        try {
+            const result = await createBooking(bookingPayload);
+
+            toast.success('Booking confirmed!');
+
             navigate('/booking-success', {
                 state: {
                     booking: {
-                        id: 'BK' + Math.floor(Math.random() * 100000),
+                        id: `BK${result.booking_id}`,
                         showId,
                         seats: selectedSeats,
                         totalPrice,
                         date: new Date().toISOString(),
-                        status: 'confirmed'
+                        status: 'confirmed',
+                        movie: movie,
+                        show: show
                     }
                 }
             });
-        });
+        } catch (err) {
+            console.error("Booking failed:", err);
+            const errorMsg = err.response?.data?.detail || "Booking failed. Please try again.";
+            toast.error(errorMsg);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -250,13 +314,13 @@ const CheckoutPage = () => {
 
                                 {/* Movie Info */}
                                 <div className="flex gap-4 mb-6 pb-6 border-b border-dashed border-gray-200">
-                                    <img src={movie?.posterUrl} alt={movie?.title} className="w-20 h-28 object-cover rounded-xl shadow-sm" />
+                                    <img src={movie?.poster_url || "https://via.placeholder.com/80x112"} alt={movie?.title} className="w-20 h-28 object-cover rounded-xl shadow-sm" />
                                     <div className="flex flex-col justify-center">
                                         <h4 className="font-bold text-lg leading-tight mb-1 text-[var(--color-light)]">{movie?.title}</h4>
-                                        <p className="text-sm text-gray-500 mb-2">{movie?.genres[0]}</p>
+                                        <p className="text-sm text-gray-500 mb-2">{movie?.genres?.[0]?.genre || 'Movie'}</p>
                                         <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
                                             <span className="px-1.5 py-0.5 border border-gray-200 rounded text-[10px]">UA</span>
-                                            <span>{Math.floor(movie?.durationMins / 60)}h {movie?.durationMins % 60}m</span>
+                                            <span>{movie?.duration_mins ? `${Math.floor(movie.duration_mins / 60)}h ${movie.duration_mins % 60}m` : ''}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -268,8 +332,8 @@ const CheckoutPage = () => {
                                             <MapPin className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-[var(--color-light)]">{show?.cinemaName}</p>
-                                            <p className="text-xs text-gray-500">{show?.screenName}</p>
+                                            <p className="text-sm font-bold text-[var(--color-light)]">{show?.cinema?.name || 'Cinema'}</p>
+                                            <p className="text-xs text-gray-500">{show?.screen_name}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
@@ -277,7 +341,7 @@ const CheckoutPage = () => {
                                             <Calendar className="w-5 h-5" />
                                         </div>
                                         <p className="text-sm font-medium text-gray-500">
-                                            {new Date(show?.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                                            {show?.start_time ? new Date(show.start_time).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : ''}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-3">
@@ -285,7 +349,7 @@ const CheckoutPage = () => {
                                             <Clock className="w-5 h-5" />
                                         </div>
                                         <p className="text-sm font-medium text-gray-500">
-                                            {formatShowTime(show?.time)}
+                                            {show?.start_time ? formatShowTime(show.start_time) : ''}
                                         </p>
                                     </div>
                                 </div>

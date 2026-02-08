@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
-from routers import movies
+from routers import movies, bookings, shows
 
 # Initialize Database Tables
 Base.metadata.create_all(bind=engine)
@@ -19,6 +19,8 @@ app.add_middleware(
 
 # Register Routers
 app.include_router(movies.router)
+app.include_router(bookings.router)
+app.include_router(shows.router)
 
 @app.on_event("startup")
 def startup_event():
@@ -32,3 +34,4 @@ def startup_event():
 @app.get("/")
 def read_root():
     return {"message": "Welcome to CineX Backend API! 🎬"}
+

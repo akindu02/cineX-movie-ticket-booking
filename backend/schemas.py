@@ -81,7 +81,6 @@ class Show(ShowBase):
 class BookingBase(BaseModel):
     contact_email: str
     contact_phone: str
-    booking_date: Optional[datetime] = None
 
 class BookingCreate(BookingBase):
     show_id: int
@@ -97,9 +96,17 @@ class BookingSeat(BaseModel):
 
 class Booking(BookingBase):
     booking_id: int
+    show_id: int
+    user_id: str
+    total_amount: float
     status: str
-    # show: Show
+    booking_date: Optional[datetime] = None
     seats: List[BookingSeat] = []
 
     class Config:
         from_attributes = True
+
+# Detailed booking with show info (for user bookings list)
+class BookingWithShow(Booking):
+    show: Optional[Show] = None
+

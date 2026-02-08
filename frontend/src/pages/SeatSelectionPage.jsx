@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -9,10 +9,11 @@ import {
   Info,
   ChevronRight,
   X,
+  Loader,
 } from "lucide-react";
 
-import { getShowById, formatShowTime, formatPrice } from "../data/shows";
-import { getMovieById } from "../data/movies";
+import { formatShowTime, formatPrice } from "../data/shows";
+import { getShowById, getMovieById, getBookedSeats } from "../services/api";
 import { generateSeatMap, calculateTotalPrice, seatTypes } from "../data/seats";
 
 const MAX_SEATS = 8;
@@ -38,8 +39,8 @@ function SeatButton({ seat, isSelected, onClick, basePriceLkr }) {
     seat.type === seatTypes.VIP
       ? "ring-yellow-400/50"
       : seat.type === seatTypes.PREMIUM
-      ? "ring-purple-400/50"
-      : "ring-gray-200";
+        ? "ring-purple-400/50"
+        : "ring-gray-200";
 
   const selectedStyles =
     "bg-[var(--color-primary)] text-white ring-[var(--color-primary)] shadow-lg shadow-red-500/20 scale-[1.03]";
@@ -78,24 +79,87 @@ export default function SeatSelectionPage() {
   const navigate = useNavigate();
 
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [show, setShow] = useState(null);
+  const [movie, setMovie] = useState(null);
+  const [bookedSeatsList, setBookedSeatsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const show = getShowById(id);
-  const movie = show ? getMovieById(show.movieId) : null;
+  // Fetch show, movie, and booked seats data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const showData = await getShowById(id);
+        setShow(showData);
 
+        if (showData.movie_id) {
+          const movieData = await getMovieById(showData.movie_id);
+          setMovie(movieData);
+        }
+
+        // Fetch already booked seats for this show
+        const bookedData = await getBookedSeats(id);
+        setBookedSeatsList(bookedData.booked_seats || []);
+      } catch (err) {
+        console.error("Failed to fetch seat selection data:", err);
+        setError("Failed to load show details");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  // Generate seat map with booked seats marked as sold
   const seatMap = useMemo(() => {
     if (!show) return null;
-    return generateSeatMap(show.screenName, show.id);
-  }, [show]);
+    const map = generateSeatMap(show.screen_name, show.show_id);
 
-  if (!show || !movie || !seatMap) {
-    return <div className="p-10 text-center text-gray-500">Loading...</div>;
+    // Mark booked seats as sold
+    if (map && bookedSeatsList.length > 0) {
+      for (const row of map.rows) {
+        for (const seat of row.seats) {
+          const seatLabel = `${seat.row}${seat.number}`;
+          if (bookedSeatsList.includes(seatLabel)) {
+            seat.status = "sold";
+          }
+        }
+      }
+    }
+
+    return map;
+  }, [show, bookedSeatsList]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-white">
+        <Loader className="w-10 h-10 animate-spin text-[var(--color-primary)]" />
+      </div>
+    );
   }
+
+  if (error || !show || !movie || !seatMap) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+        <p className="text-red-500 font-bold text-xl mb-4">{error || "Show not found"}</p>
+        <Link to="/movies" className="btn btn-primary">Browse Movies</Link>
+      </div>
+    );
+  }
+
+  // Adapt show properties to snake_case from API
+  const showPrice = show.ticket_price;
+  const showScreenName = show.screen_name;
+  const cinemaName = show.cinema?.name || 'Cinema';
+  const showDate = new Date(show.start_time).toLocaleDateString();
+  const showTime = show.start_time;
 
   const selectedSeatObjects = selectedSeats
     .map((seatId) => getSeatById(seatMap, seatId))
     .filter(Boolean);
 
-  const totalSeatPrice = calculateTotalPrice(selectedSeats, show.priceLkr, seatMap);
+  const totalSeatPrice = calculateTotalPrice(selectedSeats, showPrice, seatMap);
   const bookingFee = selectedSeats.length * BOOKING_FEE_PER_SEAT;
   const grandTotal = totalSeatPrice + bookingFee;
 
@@ -126,10 +190,13 @@ export default function SeatSelectionPage() {
       return;
     }
 
+    // Convert seat IDs to seat labels (e.g., "A1", "B5")
+    const seatLabels = selectedSeatObjects.map(s => `${s.row}${s.number}`);
+
     navigate("/checkout", {
       state: {
-        showId: show.id,
-        selectedSeats,
+        showId: show.show_id,
+        selectedSeats: seatLabels,
         totalPrice: grandTotal,
       },
     });
@@ -141,7 +208,7 @@ export default function SeatSelectionPage() {
         {/* Top header */}
         <div className="flex items-start gap-4 mb-6 pb-5 border-b border-gray-100">
           <Link
-            to={`/movies/${movie.id}`}
+            to={`/movies/${movie.movie_id}`}
             className="p-2 rounded-full hover:bg-gray-100 text-[var(--color-light)] transition"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -152,9 +219,9 @@ export default function SeatSelectionPage() {
               {movie.title}
             </h1>
             <p className="text-sm md:text-base text-[var(--color-light-400)] mt-1">
-              {show.cinemaName} •{" "}
-              <span className="text-[var(--color-primary)] font-semibold">{show.screenName}</span>{" "}
-              • {new Date(show.date).toLocaleDateString()} • {formatShowTime(show.time)}
+              {cinemaName} •{" "}
+              <span className="text-[var(--color-primary)] font-semibold">{showScreenName}</span>{" "}
+              • {showDate} • {formatShowTime(showTime)}
             </p>
           </div>
 
@@ -195,7 +262,7 @@ export default function SeatSelectionPage() {
                               key={seat.id}
                               seat={seat}
                               isSelected={isSelected}
-                              basePriceLkr={show.priceLkr}
+                              basePriceLkr={showPrice}
                               onClick={() => !isDisabled && toggleSeat(seat.id)}
                             />
                           );
@@ -244,11 +311,11 @@ export default function SeatSelectionPage() {
                 </div>
 
                 <div className="mt-4 space-y-3">
-                  <InfoRow label="Cinema" value={show.cinemaName} />
-                  <InfoRow label="Screen" value={show.screenName} />
+                  <InfoRow label="Cinema" value={cinemaName} />
+                  <InfoRow label="Screen" value={showScreenName} />
                   <InfoRow
                     label="Date & Time"
-                    value={`${new Date(show.date).toLocaleDateString()} • ${formatShowTime(show.time)}`}
+                    value={`${showDate} • ${formatShowTime(showTime)}`}
                   />
                 </div>
 
