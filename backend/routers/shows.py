@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from pydantic import BaseModel
 from database import get_db
@@ -14,7 +14,7 @@ router = APIRouter(
 @router.get("/", response_model=List[schemas.Show])
 def get_all_shows(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Get all shows with pagination."""
-    shows = db.query(models.Show).offset(skip).limit(limit).all()
+    shows = db.query(models.Show).options(joinedload(models.Show.cinema)).offset(skip).limit(limit).all()
     return shows
 
 @router.get("/{show_id}", response_model=schemas.Show)

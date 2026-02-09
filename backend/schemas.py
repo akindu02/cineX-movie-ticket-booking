@@ -70,8 +70,8 @@ class ShowBase(BaseModel):
 
 class Show(ShowBase):
     show_id: int
-    movie_id: int
-    cinema_id: int
+    movie_id: Optional[int] = None
+    cinema_id: Optional[int] = None
     cinema: Optional[Cinema] = None  # Include cinema details in show info
 
     class Config:
