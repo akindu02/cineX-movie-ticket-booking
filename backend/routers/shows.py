@@ -25,28 +25,40 @@ def get_show(show_id: int, db: Session = Depends(get_db)):
     return show
 
 
-# Schema for creating shows
-class ShowCreate(schemas.ShowBase):
-    movie_id: int
-    cinema_id: int
+# Schema for creating shows by name
+from pydantic import BaseModel
+from datetime import datetime
+from decimal import Decimal
+
+class ShowCreateByName(BaseModel):
+    movie_name: str
+    cinema_name: str
+    screen_name: str
+    screen_type: str
+    start_time: datetime
+    ticket_price: Decimal
 
 
 @router.post("/", response_model=schemas.Show, status_code=201)
-def create_show(show: ShowCreate, db: Session = Depends(get_db)):
-    """Create a new show."""
-    # Validate movie exists
-    movie = db.query(models.Movie).filter(models.Movie.movie_id == show.movie_id).first()
+def create_show(show: ShowCreateByName, db: Session = Depends(get_db)):
+    """Create a new show using movie name and cinema name."""
+    # Look up movie by name (case-insensitive partial match)
+    movie = db.query(models.Movie).filter(
+        models.Movie.title.ilike(f"%{show.movie_name}%")
+    ).first()
     if not movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
+        raise HTTPException(status_code=404, detail=f"Movie '{show.movie_name}' not found")
     
-    # Validate cinema exists
-    cinema = db.query(models.Cinema).filter(models.Cinema.cinema_id == show.cinema_id).first()
+    # Look up cinema by name (case-insensitive partial match)
+    cinema = db.query(models.Cinema).filter(
+        models.Cinema.name.ilike(f"%{show.cinema_name}%")
+    ).first()
     if not cinema:
-        raise HTTPException(status_code=404, detail="Cinema not found")
+        raise HTTPException(status_code=404, detail=f"Cinema '{show.cinema_name}' not found")
     
     db_show = models.Show(
-        movie_id=show.movie_id,
-        cinema_id=show.cinema_id,
+        movie_id=movie.movie_id,
+        cinema_id=cinema.cinema_id,
         screen_name=show.screen_name,
         screen_type=show.screen_type,
         start_time=show.start_time,

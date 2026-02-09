@@ -493,8 +493,8 @@ const BookingsSection = ({ bookings = [] }) => {
 
 const AddShowModal = ({ isOpen, onClose, movies = [], cinemas = [], onSubmit }) => {
     const [formData, setFormData] = useState({
-        movie_id: '',
-        cinema_id: '',
+        movie_name: '',
+        cinema_name: '',
         screen_name: 'Screen 1',
         screen_type: 'Standard',
         date: '',
@@ -505,7 +505,7 @@ const AddShowModal = ({ isOpen, onClose, movies = [], cinemas = [], onSubmit }) 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.movie_id || !formData.cinema_id || !formData.date || !formData.time) {
+        if (!formData.movie_name || !formData.cinema_name || !formData.date || !formData.time) {
             toast.error("Please fill in all required fields");
             return;
         }
@@ -516,8 +516,8 @@ const AddShowModal = ({ isOpen, onClose, movies = [], cinemas = [], onSubmit }) 
         setSubmitting(true);
         try {
             await onSubmit({
-                movie_id: parseInt(formData.movie_id),
-                cinema_id: parseInt(formData.cinema_id),
+                movie_name: formData.movie_name.trim(),
+                cinema_name: formData.cinema_name.trim(),
                 screen_name: formData.screen_name,
                 screen_type: formData.screen_type,
                 start_time,
@@ -525,8 +525,8 @@ const AddShowModal = ({ isOpen, onClose, movies = [], cinemas = [], onSubmit }) 
             });
             // Reset form
             setFormData({
-                movie_id: '',
-                cinema_id: '',
+                movie_name: '',
+                cinema_name: '',
                 screen_name: 'Screen 1',
                 screen_type: 'Standard',
                 date: '',
@@ -554,31 +554,25 @@ const AddShowModal = ({ isOpen, onClose, movies = [], cinemas = [], onSubmit }) 
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Select Movie *</label>
-                        <select
-                            value={formData.movie_id}
-                            onChange={(e) => setFormData({ ...formData, movie_id: e.target.value })}
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Movie Name *</label>
+                        <input
+                            type="text"
+                            placeholder="Enter movie name (e.g., Dune: Part Two)"
+                            value={formData.movie_name}
+                            onChange={(e) => setFormData({ ...formData, movie_name: e.target.value })}
                             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
-                        >
-                            <option value="">Select a movie...</option>
-                            {movies.map(movie => (
-                                <option key={movie.movie_id} value={movie.movie_id}>{movie.title}</option>
-                            ))}
-                        </select>
+                        />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Cinema *</label>
-                        <select
-                            value={formData.cinema_id}
-                            onChange={(e) => setFormData({ ...formData, cinema_id: e.target.value })}
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Cinema Name *</label>
+                        <input
+                            type="text"
+                            placeholder="Enter cinema name (e.g., Scope Cinemas - Colombo City Centre)"
+                            value={formData.cinema_name}
+                            onChange={(e) => setFormData({ ...formData, cinema_name: e.target.value })}
                             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
-                        >
-                            <option value="">Select cinema...</option>
-                            {cinemas.map(cinema => (
-                                <option key={cinema.cinema_id} value={cinema.cinema_id}>{cinema.name} - {cinema.location}</option>
-                            ))}
-                        </select>
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">
