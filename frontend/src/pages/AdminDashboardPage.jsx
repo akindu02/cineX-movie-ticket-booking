@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatPrice, formatShowTime } from '../data/shows';
-import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createCinema, getAllCinemas } from '../services/api';
+import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createCinema, createMovie, getAllCinemas } from '../services/api';
 import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, Coins, Calendar, TrendingUp, Clock, LogOut, Bell, Settings, Shield, Loader, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboardPage = () => {
     const [activeSection, setActiveSection] = useState('overview');
     const [isAddCinemaModalOpen, setIsAddCinemaModalOpen] = useState(false);
+    const [isAddMovieModalOpen, setIsAddMovieModalOpen] = useState(false);
     const navigate = useNavigate();
 
     // API Data State
@@ -93,6 +94,18 @@ const AdminDashboardPage = () => {
         }
     };
 
+    const handleAddMovie = async (movieData) => {
+        try {
+            const newMovie = await createMovie(movieData);
+            toast.success("Movie created successfully");
+            setMovies(prev => [newMovie, ...prev]);
+            setIsAddMovieModalOpen(false);
+        } catch (err) {
+            console.error("Failed to create movie:", err);
+            toast.error(err.response?.data?.detail || "Failed to create movie");
+        }
+    };
+
     const renderContent = () => {
         if (loading) {
             return (
@@ -104,7 +117,7 @@ const AdminDashboardPage = () => {
 
         switch (activeSection) {
             case 'movies':
-                return <MoviesSection movies={movies} onDelete={handleDeleteMovie} onAddMovie={() => setIsAddCinemaModalOpen(true)} />;
+                return <MoviesSection movies={movies} onDelete={handleDeleteMovie} onAddMovie={() => setIsAddMovieModalOpen(true)} />;
             case 'cinemas':
                 return <CinemasSection cinemas={cinemas} onAddCinema={() => setIsAddCinemaModalOpen(true)} />;
             case 'bookings':
@@ -120,6 +133,11 @@ const AdminDashboardPage = () => {
                 isOpen={isAddCinemaModalOpen}
                 onClose={() => setIsAddCinemaModalOpen(false)}
                 onSubmit={handleAddCinema}
+            />
+            <AddMovieModal
+                isOpen={isAddMovieModalOpen}
+                onClose={() => setIsAddMovieModalOpen(false)}
+                onSubmit={handleAddMovie}
             />
 
             {/* Sidebar */}
@@ -557,6 +575,210 @@ const AddCinemaModal = ({ isOpen, onClose, onSubmit }) => {
                             className="flex-1 btn btn-primary py-3 rounded-xl shadow-lg shadow-red-500/20 font-bold disabled:opacity-50"
                         >
                             {submitting ? 'Adding...' : 'Add Cinema'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const AddMovieModal = ({ isOpen, onClose, onSubmit }) => {
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        duration_mins: 120,
+        language: 'English',
+        release_date: '',
+        rating: 0,
+        poster_url: '',
+        trailer_url: '',
+        genres: []
+    });
+    const [genreInput, setGenreInput] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const availableGenres = ['Action', 'Adventure', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Thriller', 'Romance', 'Animation', 'Fantasy'];
+
+    const toggleGenre = (genre) => {
+        setFormData(prev => ({
+            ...prev,
+            genres: prev.genres.includes(genre)
+                ? prev.genres.filter(g => g !== genre)
+                : [...prev.genres, genre]
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.title || !formData.duration_mins || formData.genres.length === 0) {
+            toast.error("Please fill in title, duration, and at least one genre");
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            await onSubmit({
+                title: formData.title.trim(),
+                description: formData.description.trim() || null,
+                duration_mins: parseInt(formData.duration_mins),
+                language: formData.language.trim() || null,
+                release_date: formData.release_date || null,
+                rating: parseFloat(formData.rating) || null,
+                poster_url: formData.poster_url.trim() || null,
+                trailer_url: formData.trailer_url.trim() || null,
+                genres: formData.genres
+            });
+            // Reset form
+            setFormData({
+                title: '',
+                description: '',
+                duration_mins: 120,
+                language: 'English',
+                release_date: '',
+                rating: 0,
+                poster_url: '',
+                trailer_url: '',
+                genres: []
+            });
+        } catch (err) {
+            // Error handled in parent
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-2xl mx-4 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 sticky top-0">
+                    <h3 className="text-xl font-bold text-[var(--color-light)]">Add New Movie</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Movie Title *</label>
+                        <input
+                            type="text"
+                            placeholder="Enter movie title"
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
+                        <textarea
+                            placeholder="Enter movie description"
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            rows={3}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600 resize-none"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Duration (mins) *</label>
+                            <input
+                                type="number"
+                                value={formData.duration_mins}
+                                onChange={(e) => setFormData({ ...formData, duration_mins: e.target.value })}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Language</label>
+                            <input
+                                type="text"
+                                value={formData.language}
+                                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Release Date</label>
+                            <input
+                                type="date"
+                                value={formData.release_date}
+                                onChange={(e) => setFormData({ ...formData, release_date: e.target.value })}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Rating (0-10)</label>
+                            <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="10"
+                                value={formData.rating}
+                                onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Poster URL</label>
+                        <input
+                            type="url"
+                            placeholder="https://example.com/poster.jpg"
+                            value={formData.poster_url}
+                            onChange={(e) => setFormData({ ...formData, poster_url: e.target.value })}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Trailer URL</label>
+                        <input
+                            type="url"
+                            placeholder="https://youtube.com/watch?v=..."
+                            value={formData.trailer_url}
+                            onChange={(e) => setFormData({ ...formData, trailer_url: e.target.value })}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Genres * (select at least one)</label>
+                        <div className="flex flex-wrap gap-2">
+                            {availableGenres.map(genre => (
+                                <button
+                                    key={genre}
+                                    type="button"
+                                    onClick={() => toggleGenre(genre)}
+                                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${formData.genres.includes(genre)
+                                            ? 'bg-[var(--color-primary)] text-white'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    {genre}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="pt-4 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="flex-1 btn btn-primary py-3 rounded-xl shadow-lg shadow-red-500/20 font-bold disabled:opacity-50"
+                        >
+                            {submitting ? 'Adding...' : 'Add Movie'}
                         </button>
                     </div>
                 </form>
