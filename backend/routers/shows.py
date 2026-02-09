@@ -26,6 +26,61 @@ def get_show(show_id: int, db: Session = Depends(get_db)):
     return show
 
 
+@router.post("/", response_model=schemas.Show, status_code=201)
+def create_show(show: schemas.ShowCreate, db: Session = Depends(get_db)):
+    """Create a new show."""
+    # Validate movie exists
+    movie = db.query(models.Movie).filter(models.Movie.movie_id == show.movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    
+    # Validate cinema exists
+    cinema = db.query(models.Cinema).filter(models.Cinema.cinema_id == show.cinema_id).first()
+    if not cinema:
+        raise HTTPException(status_code=404, detail="Cinema not found")
+    
+    db_show = models.Show(
+        movie_id=show.movie_id,
+        cinema_id=show.cinema_id,
+        screen_name=show.screen_name,
+        screen_type=show.screen_type,
+        start_time=show.start_time,
+        ticket_price=show.ticket_price
+    )
+    db.add(db_show)
+    db.commit()
+    db.refresh(db_show)
+    return db_show
+
+
+@router.put("/{show_id}", response_model=schemas.Show)
+def update_show(show_id: int, show_update: schemas.ShowCreate, db: Session = Depends(get_db)):
+    """Update an existing show."""
+    db_show = db.query(models.Show).filter(models.Show.show_id == show_id).first()
+    if not db_show:
+        raise HTTPException(status_code=404, detail="Show not found")
+    
+    # Validate movie exists
+    movie = db.query(models.Movie).filter(models.Movie.movie_id == show_update.movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    
+    # Validate cinema exists
+    cinema = db.query(models.Cinema).filter(models.Cinema.cinema_id == show_update.cinema_id).first()
+    if not cinema:
+        raise HTTPException(status_code=404, detail="Cinema not found")
+    
+    db_show.movie_id = show_update.movie_id
+    db_show.cinema_id = show_update.cinema_id
+    db_show.screen_name = show_update.screen_name
+    db_show.screen_type = show_update.screen_type
+    db_show.start_time = show_update.start_time
+    db_show.ticket_price = show_update.ticket_price
+    
+    db.commit()
+    db.refresh(db_show)
+    return db_show
+
 
 @router.delete("/{show_id}")
 def delete_show(show_id: int, db: Session = Depends(get_db)):

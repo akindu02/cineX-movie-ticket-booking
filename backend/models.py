@@ -67,7 +67,7 @@ class Booking(Base):
     __tablename__ = "bookings"
 
     booking_id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String(255), ForeignKey("users.user_id"))
+    user_id = Column(String(255), ForeignKey("users.user_id"), nullable=True)
     show_id = Column(Integer, ForeignKey("shows.show_id"))
     booking_date = Column(TIMESTAMP, server_default=func.now())
     total_amount = Column(DECIMAL(10, 2), nullable=False)

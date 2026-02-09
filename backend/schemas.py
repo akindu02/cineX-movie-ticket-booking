@@ -68,6 +68,14 @@ class ShowBase(BaseModel):
     start_time: datetime
     ticket_price: float
 
+class ShowCreate(BaseModel):
+    movie_id: int
+    cinema_id: int
+    screen_name: str
+    screen_type: Optional[str] = "2D"
+    start_time: datetime
+    ticket_price: float
+
 class Show(ShowBase):
     show_id: int
     movie_id: Optional[int] = None
@@ -84,7 +92,7 @@ class BookingBase(BaseModel):
 
 class BookingCreate(BookingBase):
     show_id: int
-    user_id: str
+    user_id: Optional[str] = None
     seat_numbers: List[str]
     total_amount: float
 
@@ -97,7 +105,7 @@ class BookingSeat(BaseModel):
 class Booking(BookingBase):
     booking_id: int
     show_id: int
-    user_id: str
+    user_id: Optional[str] = None
     total_amount: float
     status: str
     booking_date: Optional[datetime] = None

@@ -56,6 +56,16 @@ export const deleteShow = async (id) => {
     return response.data;
 };
 
+export const createShow = async (showData) => {
+    const response = await api.post('/shows/', showData);
+    return response.data;
+};
+
+export const updateShow = async (id, showData) => {
+    const response = await api.put(`/shows/${id}`, showData);
+    return response.data;
+};
+
 export const getBookedSeats = async (showId) => {
     const response = await api.get(`/bookings/show/${showId}/booked-seats`);
     return response.data;

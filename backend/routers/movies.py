@@ -36,6 +36,23 @@ def get_movie(movie_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Movie not found")
     return movie
 
+@router.get("/{movie_id}/shows", response_model=List[schemas.Show])
+def get_movie_shows(movie_id: int, db: Session = Depends(get_db)):
+    """Get all shows for a specific movie."""
+    movie = db.query(models.Movie).filter(models.Movie.movie_id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    
+    from sqlalchemy.orm import joinedload
+    from datetime import datetime
+    shows = db.query(models.Show).options(
+        joinedload(models.Show.cinema)
+    ).filter(
+        models.Show.movie_id == movie_id,
+        models.Show.start_time >= datetime.now()  # Only future shows
+    ).order_by(models.Show.start_time).all()
+    return shows
+
 @router.post("/", response_model=schemas.Movie, status_code=201)
 def create_movie(movie: schemas.MovieCreate, db: Session = Depends(get_db)):
     """Create a new movie with genres."""
