@@ -96,13 +96,18 @@ const AdminDashboardPage = () => {
 
     const handleAddMovie = async (movieData) => {
         try {
+            console.log('handleAddMovie called with:', movieData);
             const newMovie = await createMovie(movieData);
+            console.log('Movie created successfully:', newMovie);
             toast.success("Movie created successfully");
             setMovies(prev => [newMovie, ...prev]);
             setIsAddMovieModalOpen(false);
         } catch (err) {
-            console.error("Failed to create movie:", err);
-            toast.error(err.response?.data?.detail || "Failed to create movie");
+            console.error("Failed to create movie - Full error:", err);
+            console.error("Error response:", err.response);
+            console.error("Error data:", err.response?.data);
+            const errorMessage = err.response?.data?.detail || err.message || "Failed to create movie";
+            toast.error(errorMessage);
         }
     };
 
@@ -286,14 +291,26 @@ const OverviewSection = ({ stats, bookings = [], setActiveSection }) => {
 
 const MoviesSection = ({ movies = [], onDelete, onAddMovie }) => {
     const [search, setSearch] = useState('');
+    const [deleteConfirm, setDeleteConfirm] = useState(null);
     const filteredMovies = movies.filter(m => m.title.toLowerCase().includes(search.toLowerCase()));
+
+    const handleDelete = (movieId, movieTitle) => {
+        if (deleteConfirm === movieId) {
+            onDelete(movieId);
+            setDeleteConfirm(null);
+        } else {
+            setDeleteConfirm(movieId);
+            // Auto-reset after 3 seconds
+            setTimeout(() => setDeleteConfirm(null), 3000);
+        }
+    };
 
     return (
         <div className="animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-[var(--color-light)]">Movies</h2>
-                    <p className="text-gray-500 text-sm">Manage your movie catalog</p>
+                    <p className="text-gray-500 text-sm">Manage your movie catalog ({movies.length} movies)</p>
                 </div>
                 <button
                     onClick={onAddMovie}
@@ -316,55 +333,112 @@ const MoviesSection = ({ movies = [], onDelete, onAddMovie }) => {
                         />
                     </div>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="text-xs uppercase bg-gray-50 text-gray-500 font-bold tracking-wider">
-                            <tr>
-                                <th className="px-8 py-4">Title</th>
-                                <th className="px-6 py-4">Genre</th>
-                                <th className="px-6 py-4">Rating</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {filteredMovies.map(movie => (
-                                <tr key={movie.movie_id} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="px-8 py-4">
-                                        <div className="flex items-center gap-4">
-                                            <img src={movie.poster_url} alt="" className="w-10 h-14 object-cover rounded-lg shadow-sm" />
-                                            <div>
-                                                <div className="font-bold text-[var(--color-light)]">{movie.title}</div>
-                                                <div className="text-xs text-gray-400">{Math.floor(movie.duration_mins / 60)}h {movie.duration_mins % 60}m</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-600 text-sm font-medium">
-                                        <div className="flex flex-wrap gap-1">
-                                            {movie.genres?.map(g => (
-                                                <span key={g.genre || g} className="px-2 py-1 bg-gray-100 rounded-lg text-xs">{g.genre || g}</span>
-                                            ))}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-1.5 bg-yellow-50 text-yellow-600 px-3 py-1.5 rounded-full w-fit">
-                                            <span className="text-xs font-bold">★ {movie.rating}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors">
-                                                <Edit className="w-4 h-4" />
-                                            </button>
-                                            <button onClick={() => onDelete(movie.movie_id)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
-                                                <Trash className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
+
+                {filteredMovies.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <Film className="w-16 h-16 mx-auto mb-4 text-gray-200" />
+                        <h3 className="text-lg font-bold text-gray-400 mb-2">
+                            {search ? 'No movies found' : 'No movies yet'}
+                        </h3>
+                        <p className="text-gray-400 text-sm mb-6">
+                            {search ? 'Try a different search term' : 'Add your first movie to get started'}
+                        </p>
+                        {!search && (
+                            <button
+                                onClick={onAddMovie}
+                                className="btn btn-primary px-6 py-2.5 rounded-xl"
+                            >
+                                <Plus className="w-5 h-5" /> Add Your First Movie
+                            </button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="text-xs uppercase bg-gray-50 text-gray-500 font-bold tracking-wider">
+                                <tr>
+                                    <th className="px-8 py-4">Movie</th>
+                                    <th className="px-6 py-4">Genre</th>
+                                    <th className="px-6 py-4">Details</th>
+                                    <th className="px-6 py-4">Rating</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {filteredMovies.map(movie => (
+                                    <tr key={movie.movie_id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-8 py-4">
+                                            <div className="flex items-center gap-4">
+                                                {movie.poster_url ? (
+                                                    <img src={movie.poster_url} alt="" className="w-12 h-16 object-cover rounded-lg shadow-sm" />
+                                                ) : (
+                                                    <div className="w-12 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                        <Film className="w-6 h-6 text-gray-300" />
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <div className="font-bold text-[var(--color-light)]">{movie.title}</div>
+                                                    <div className="text-xs text-gray-400 flex items-center gap-2">
+                                                        <Clock className="w-3 h-3" />
+                                                        {Math.floor(movie.duration_mins / 60)}h {movie.duration_mins % 60}m
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-wrap gap-1 max-w-[200px]">
+                                                {movie.genres?.slice(0, 3).map(g => (
+                                                    <span key={g.genre || g} className="px-2 py-1 bg-gray-100 rounded-lg text-xs font-medium text-gray-600">
+                                                        {g.genre || g}
+                                                    </span>
+                                                ))}
+                                                {movie.genres?.length > 3 && (
+                                                    <span className="px-2 py-1 bg-gray-100 rounded-lg text-xs font-medium text-gray-400">
+                                                        +{movie.genres.length - 3}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm">
+                                                <div className="text-gray-600 font-medium">{movie.language || 'N/A'}</div>
+                                                <div className="text-xs text-gray-400">
+                                                    {movie.release_date ? new Date(movie.release_date).toLocaleDateString() : 'No release date'}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {movie.rating ? (
+                                                <div className="flex items-center gap-1.5 bg-yellow-50 text-yellow-600 px-3 py-1.5 rounded-full w-fit">
+                                                    <span className="text-xs font-bold">★ {movie.rating}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">No rating</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors">
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(movie.movie_id, movie.title)}
+                                                    className={`p-2 rounded-lg transition-colors ${deleteConfirm === movie.movie_id
+                                                        ? 'bg-red-500 text-white'
+                                                        : 'hover:bg-red-50 text-gray-400 hover:text-red-500'
+                                                        }`}
+                                                    title={deleteConfirm === movie.movie_id ? 'Click again to confirm' : 'Delete movie'}
+                                                >
+                                                    <Trash className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -618,17 +692,19 @@ const AddMovieModal = ({ isOpen, onClose, onSubmit }) => {
 
         setSubmitting(true);
         try {
-            await onSubmit({
+            const submitData = {
                 title: formData.title.trim(),
                 description: formData.description.trim() || null,
                 duration_mins: parseInt(formData.duration_mins),
                 language: formData.language.trim() || null,
                 release_date: formData.release_date || null,
-                rating: parseFloat(formData.rating) || null,
+                rating: formData.rating ? parseFloat(formData.rating) : null,
                 poster_url: formData.poster_url.trim() || null,
                 trailer_url: formData.trailer_url.trim() || null,
                 genres: formData.genres
-            });
+            };
+            console.log('Submitting movie data:', submitData);
+            await onSubmit(submitData);
             // Reset form
             setFormData({
                 title: '',
@@ -642,7 +718,8 @@ const AddMovieModal = ({ isOpen, onClose, onSubmit }) => {
                 genres: []
             });
         } catch (err) {
-            // Error handled in parent
+            console.error('Error in AddMovieModal:', err);
+            // Error is handled by the parent's handleAddMovie catch block
         } finally {
             setSubmitting(false);
         }
@@ -759,8 +836,8 @@ const AddMovieModal = ({ isOpen, onClose, onSubmit }) => {
                                     type="button"
                                     onClick={() => toggleGenre(genre)}
                                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${formData.genres.includes(genre)
-                                            ? 'bg-[var(--color-primary)] text-white'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        ? 'bg-[var(--color-primary)] text-white'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
                                     {genre}
