@@ -67,6 +67,11 @@ export const getAllCinemas = async () => {
     return response.data;
 };
 
+export const createCinema = async (cinemaData) => {
+    const response = await api.post('/shows/cinemas/', cinemaData);
+    return response.data;
+};
+
 // --- Bookings ---
 export const createBooking = async (bookingData) => {
     const response = await api.post('/bookings/', bookingData);

@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatPrice, formatShowTime } from '../data/shows';
-import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createShow, getAllCinemas } from '../services/api';
+import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createCinema, getAllCinemas } from '../services/api';
 import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, Coins, Calendar, TrendingUp, Clock, LogOut, Bell, Settings, Shield, Loader, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboardPage = () => {
     const [activeSection, setActiveSection] = useState('overview');
-    const [isAddShowModalOpen, setIsAddShowModalOpen] = useState(false);
+    const [isAddCinemaModalOpen, setIsAddCinemaModalOpen] = useState(false);
     const navigate = useNavigate();
 
     // API Data State
@@ -81,15 +81,15 @@ const AdminDashboardPage = () => {
         }
     };
 
-    const handleAddShow = async (showData) => {
+    const handleAddCinema = async (cinemaData) => {
         try {
-            const newShow = await createShow(showData);
-            toast.success("Show created successfully");
-            setShows(prev => [newShow, ...prev]);
-            setIsAddShowModalOpen(false);
+            const newCinema = await createCinema(cinemaData);
+            toast.success("Cinema created successfully");
+            setCinemas(prev => [newCinema, ...prev]);
+            setIsAddCinemaModalOpen(false);
         } catch (err) {
-            console.error("Failed to create show:", err);
-            toast.error(err.response?.data?.detail || "Failed to create show");
+            console.error("Failed to create cinema:", err);
+            toast.error(err.response?.data?.detail || "Failed to create cinema");
         }
     };
 
@@ -104,24 +104,22 @@ const AdminDashboardPage = () => {
 
         switch (activeSection) {
             case 'movies':
-                return <MoviesSection movies={movies} onDelete={handleDeleteMovie} onAddMovie={() => setIsAddShowModalOpen(true)} />;
-            case 'shows':
-                return <ShowsSection shows={shows} onDelete={handleDeleteShow} onAddShow={() => setIsAddShowModalOpen(true)} />;
+                return <MoviesSection movies={movies} onDelete={handleDeleteMovie} onAddMovie={() => setIsAddCinemaModalOpen(true)} />;
+            case 'cinemas':
+                return <CinemasSection cinemas={cinemas} onAddCinema={() => setIsAddCinemaModalOpen(true)} />;
             case 'bookings':
                 return <BookingsSection bookings={bookings} />;
             default:
-                return <OverviewSection stats={stats} bookings={bookings} setActiveSection={setActiveSection} onAddMovie={() => setIsAddShowModalOpen(true)} />;
+                return <OverviewSection stats={stats} bookings={bookings} setActiveSection={setActiveSection} onAddMovie={() => setIsAddCinemaModalOpen(true)} />;
         }
     };
 
     return (
         <div className="flex min-h-screen pt-20 bg-[var(--color-dark-100)]">
-            <AddShowModal
-                isOpen={isAddShowModalOpen}
-                onClose={() => setIsAddShowModalOpen(false)}
-                movies={movies}
-                cinemas={cinemas}
-                onSubmit={handleAddShow}
+            <AddCinemaModal
+                isOpen={isAddCinemaModalOpen}
+                onClose={() => setIsAddCinemaModalOpen(false)}
+                onSubmit={handleAddCinema}
             />
 
             {/* Sidebar */}
@@ -144,9 +142,9 @@ const AdminDashboardPage = () => {
                         />
                         <SidebarItem
                             icon={Monitor}
-                            label="Manage Shows"
-                            active={activeSection === 'shows'}
-                            onClick={() => setActiveSection('shows')}
+                            label="Manage Cinemas"
+                            active={activeSection === 'cinemas'}
+                            onClick={() => setActiveSection('cinemas')}
                         />
                         <SidebarItem
                             icon={Ticket}
@@ -360,19 +358,19 @@ const MoviesSection = ({ movies = [], onDelete, onAddMovie }) => {
     );
 };
 
-const ShowsSection = ({ shows = [], onDelete, onAddShow }) => {
+const CinemasSection = ({ cinemas = [], onAddCinema }) => {
     return (
         <div className="animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-[var(--color-light)]">Shows</h2>
-                    <p className="text-gray-500 text-sm">Schedule and manage screenings</p>
+                    <h2 className="text-2xl font-bold text-[var(--color-light)]">Cinemas</h2>
+                    <p className="text-gray-500 text-sm">Manage cinema locations</p>
                 </div>
                 <button
-                    onClick={onAddShow}
+                    onClick={onAddCinema}
                     className="btn btn-primary px-6 py-2.5 rounded-xl shadow-lg shadow-red-500/20 flex items-center gap-2 font-bold"
                 >
-                    <Plus className="w-5 h-5" /> Add Show
+                    <Plus className="w-5 h-5" /> Add Cinema
                 </button>
             </div>
 
@@ -381,44 +379,35 @@ const ShowsSection = ({ shows = [], onDelete, onAddShow }) => {
                     <table className="w-full text-left">
                         <thead className="text-xs uppercase bg-gray-50 text-gray-500 font-bold tracking-wider">
                             <tr>
-                                <th className="px-8 py-4">Movie</th>
-                                <th className="px-6 py-4">Cinema & Screen</th>
-                                <th className="px-6 py-4">Time</th>
-                                <th className="px-6 py-4">Price</th>
+                                <th className="px-8 py-4">Cinema ID</th>
+                                <th className="px-6 py-4">Name</th>
+                                <th className="px-6 py-4">Location</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {shows.slice(0, 15).map(show => (
-                                <tr key={show.show_id} className="hover:bg-gray-50/50 transition-colors">
+                            {cinemas.map(cinema => (
+                                <tr key={cinema.cinema_id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-8 py-4">
-                                        <div className="text-sm font-bold text-[var(--color-light)]">
-                                            {show.movie?.title || `Movie #${show.movie_id}`}
+                                        <div className="text-sm font-bold text-gray-400">
+                                            #{cinema.cinema_id}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-gray-700 text-sm">{show.cinema?.name || 'N/A'}</div>
-                                        <div className="text-xs text-gray-400 font-medium">{show.screen_name}</div>
+                                        <div className="font-bold text-[var(--color-light)] text-sm">{cinema.name}</div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
-                                                <Calendar className="w-3 h-3" /> {show.start_time ? new Date(show.start_time).toLocaleDateString() : 'N/A'}
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm font-bold text-[var(--color-light)]">
-                                                <Clock className="w-3 h-3 text-[var(--color-primary)]" /> {show.start_time ? formatShowTime(show.start_time) : 'N/A'}
-                                            </div>
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <Monitor className="w-4 h-4 text-gray-400" />
+                                            {cinema.location}
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4 font-mono text-sm font-bold text-gray-600">
-                                        {formatPrice(show.ticket_price)}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors">
                                                 <Edit className="w-4 h-4" />
                                             </button>
-                                            <button onClick={() => onDelete(show.show_id)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
+                                            <button className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
                                                 <Trash className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -428,6 +417,12 @@ const ShowsSection = ({ shows = [], onDelete, onAddShow }) => {
                         </tbody>
                     </table>
                 </div>
+                {cinemas.length === 0 && (
+                    <div className="p-12 text-center text-gray-400">
+                        <Monitor className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                        <p className="font-bold">No cinemas yet</p>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -491,47 +486,30 @@ const BookingsSection = ({ bookings = [] }) => {
     );
 };
 
-const AddShowModal = ({ isOpen, onClose, movies = [], cinemas = [], onSubmit }) => {
+const AddCinemaModal = ({ isOpen, onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
-        movie_name: '',
-        cinema_name: '',
-        screen_name: 'Screen 1',
-        screen_type: 'Standard',
-        date: '',
-        time: '',
-        ticket_price: 1500
+        name: '',
+        location: ''
     });
     const [submitting, setSubmitting] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.movie_name || !formData.cinema_name || !formData.date || !formData.time) {
+        if (!formData.name || !formData.location) {
             toast.error("Please fill in all required fields");
             return;
         }
 
-        // Combine date and time into ISO datetime
-        const start_time = `${formData.date}T${formData.time}:00`;
-
         setSubmitting(true);
         try {
             await onSubmit({
-                movie_name: formData.movie_name.trim(),
-                cinema_name: formData.cinema_name.trim(),
-                screen_name: formData.screen_name,
-                screen_type: formData.screen_type,
-                start_time,
-                ticket_price: parseFloat(formData.ticket_price)
+                name: formData.name.trim(),
+                location: formData.location.trim()
             });
             // Reset form
             setFormData({
-                movie_name: '',
-                cinema_name: '',
-                screen_name: 'Screen 1',
-                screen_type: 'Standard',
-                date: '',
-                time: '',
-                ticket_price: 1500
+                name: '',
+                location: ''
             });
         } catch (err) {
             // Error handled in parent
@@ -546,7 +524,7 @@ const AddShowModal = ({ isOpen, onClose, movies = [], cinemas = [], onSubmit }) 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-3xl w-full max-w-lg mx-4 shadow-2xl relative overflow-hidden">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 className="text-xl font-bold text-[var(--color-light)]">Schedule New Show</h3>
+                    <h3 className="text-xl font-bold text-[var(--color-light)]">Add New Cinema</h3>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
@@ -554,89 +532,25 @@ const AddShowModal = ({ isOpen, onClose, movies = [], cinemas = [], onSubmit }) 
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Movie Name *</label>
-                        <input
-                            type="text"
-                            placeholder="Enter movie name (e.g., Dune: Part Two)"
-                            value={formData.movie_name}
-                            onChange={(e) => setFormData({ ...formData, movie_name: e.target.value })}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
-                        />
-                    </div>
-
-                    <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Cinema Name *</label>
                         <input
                             type="text"
                             placeholder="Enter cinema name (e.g., Scope Cinemas - Colombo City Centre)"
-                            value={formData.cinema_name}
-                            onChange={(e) => setFormData({ ...formData, cinema_name: e.target.value })}
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Screen Name</label>
-                            <input
-                                type="text"
-                                value={formData.screen_name}
-                                onChange={(e) => setFormData({ ...formData, screen_name: e.target.value })}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Screen Type</label>
-                            <select
-                                value={formData.screen_type}
-                                onChange={(e) => setFormData({ ...formData, screen_type: e.target.value })}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
-                            >
-                                <option value="Standard">Standard</option>
-                                <option value="IMAX">IMAX</option>
-                                <option value="Dolby Atmos">Dolby Atmos</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Date *</label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
-                                    type="date"
-                                    value={formData.date}
-                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Time *</label>
-                            <div className="relative">
-                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
-                                    type="time"
-                                    value={formData.time}
-                                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Ticket Price (LKR)</label>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">LKR</span>
-                            <input
-                                type="number"
-                                value={formData.ticket_price}
-                                onChange={(e) => setFormData({ ...formData, ticket_price: e.target.value })}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
-                            />
-                        </div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Location *</label>
+                        <input
+                            type="text"
+                            placeholder="Enter location (e.g., Colombo 02)"
+                            value={formData.location}
+                            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                        />
                     </div>
 
                     <div className="pt-4 flex gap-3">
@@ -648,7 +562,7 @@ const AddShowModal = ({ isOpen, onClose, movies = [], cinemas = [], onSubmit }) 
                             disabled={submitting}
                             className="flex-1 btn btn-primary py-3 rounded-xl shadow-lg shadow-red-500/20 font-bold disabled:opacity-50"
                         >
-                            {submitting ? 'Adding...' : 'Add Show'}
+                            {submitting ? 'Adding...' : 'Add Cinema'}
                         </button>
                     </div>
                 </form>

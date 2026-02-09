@@ -89,3 +89,25 @@ def get_all_cinemas(db: Session = Depends(get_db)):
     cinemas = db.query(models.Cinema).all()
     return cinemas
 
+
+class CinemaCreate(BaseModel):
+    name: str
+    location: str
+
+
+@router.post("/cinemas/", response_model=schemas.Cinema, status_code=201)
+def create_cinema(cinema: CinemaCreate, db: Session = Depends(get_db)):
+    """Create a new cinema."""
+    # Check if cinema with same name already exists
+    existing = db.query(models.Cinema).filter(models.Cinema.name == cinema.name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Cinema with this name already exists")
+    
+    db_cinema = models.Cinema(
+        name=cinema.name,
+        location=cinema.location
+    )
+    db.add(db_cinema)
+    db.commit()
+    db.refresh(db_cinema)
+    return db_cinema
