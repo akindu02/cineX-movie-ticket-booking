@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { movies } from '../data/movies';
-import { shows, formatPrice, formatShowTime, getAllCinemas } from '../data/shows';
-import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, Coins, Calendar, TrendingUp, Clock, LogOut, Bell, Settings, Shield } from 'lucide-react';
+import { formatPrice, formatShowTime } from '../data/shows';
+import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createShow, getAllCinemas } from '../services/api';
+import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, Coins, Calendar, TrendingUp, Clock, LogOut, Bell, Settings, Shield, Loader, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboardPage = () => {
@@ -10,40 +10,107 @@ const AdminDashboardPage = () => {
     const [isAddShowModalOpen, setIsAddShowModalOpen] = useState(false);
     const navigate = useNavigate();
 
+    // API Data State
+    const [movies, setMovies] = useState([]);
+    const [shows, setShows] = useState([]);
+    const [bookings, setBookings] = useState([]);
+    const [cinemas, setCinemas] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch all data on mount
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const [moviesData, showsData, bookingsData, cinemasData] = await Promise.all([
+                    getMovies(),
+                    getAllShows(),
+                    getAllBookings(),
+                    getAllCinemas()
+                ]);
+                setMovies(moviesData);
+                setShows(showsData);
+                setBookings(bookingsData);
+                setCinemas(cinemasData);
+            } catch (err) {
+                console.error("Failed to fetch admin data:", err);
+                toast.error("Failed to load dashboard data");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     const handleSignOut = () => {
         navigate('/');
     };
 
-    // Stats Logic
+    // Stats Logic - now uses API data
     const stats = useMemo(() => {
-        const totalMovies = movies.length;
-        const totalShows = shows.length;
-        const totalRevenue = shows.reduce((acc, show) => {
-            return acc + (show.priceLkr * (show.availableSeats * 0.3)); // Simulating 30% occupancy
-        }, 0);
+        const totalRevenue = bookings.reduce((acc, booking) => acc + (booking.total_amount || 0), 0);
+        const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
 
         return [
             { label: 'Total Revenue', value: formatPrice(totalRevenue), change: '+12%', icon: Coins, color: 'bg-green-50 text-green-600' },
-            { label: 'Active Movies', value: totalMovies, change: '+3', icon: Film, color: 'bg-blue-50 text-blue-600' },
-            { label: 'Total Shows', value: totalShows, change: '+24', icon: Monitor, color: 'bg-purple-50 text-purple-600' },
-            { label: 'Bookings Today', value: '1,240', change: '+18%', icon: Ticket, color: 'bg-orange-50 text-orange-600' },
+            { label: 'Active Movies', value: movies.length, change: '+3', icon: Film, color: 'bg-blue-50 text-blue-600' },
+            { label: 'Total Shows', value: shows.length, change: '+24', icon: Monitor, color: 'bg-purple-50 text-purple-600' },
+            { label: 'Active Bookings', value: confirmedBookings, change: '+18%', icon: Ticket, color: 'bg-orange-50 text-orange-600' },
         ];
-    }, []);
+    }, [movies, shows, bookings]);
 
-    const handleDelete = (id, type) => {
-        toast.success(`${type} ${id} deleted successfully`);
+    const handleDeleteMovie = async (id) => {
+        try {
+            await deleteMovie(id);
+            toast.success("Movie deleted successfully");
+            setMovies(prev => prev.filter(m => m.movie_id !== id));
+        } catch (err) {
+            console.error("Failed to delete movie:", err);
+            toast.error("Failed to delete movie");
+        }
+    };
+
+    const handleDeleteShow = async (id) => {
+        try {
+            await deleteShow(id);
+            toast.success("Show deleted successfully");
+            setShows(prev => prev.filter(s => s.show_id !== id));
+        } catch (err) {
+            console.error("Failed to delete show:", err);
+            toast.error("Failed to delete show");
+        }
+    };
+
+    const handleAddShow = async (showData) => {
+        try {
+            const newShow = await createShow(showData);
+            toast.success("Show created successfully");
+            setShows(prev => [newShow, ...prev]);
+            setIsAddShowModalOpen(false);
+        } catch (err) {
+            console.error("Failed to create show:", err);
+            toast.error(err.response?.data?.detail || "Failed to create show");
+        }
     };
 
     const renderContent = () => {
+        if (loading) {
+            return (
+                <div className="flex justify-center items-center py-20">
+                    <Loader className="w-10 h-10 animate-spin text-[var(--color-primary)]" />
+                </div>
+            );
+        }
+
         switch (activeSection) {
             case 'movies':
-                return <MoviesSection onDelete={(id) => handleDelete(id, 'Movie')} onAddMovie={() => setIsAddShowModalOpen(true)} />;
+                return <MoviesSection movies={movies} onDelete={handleDeleteMovie} onAddMovie={() => setIsAddShowModalOpen(true)} />;
             case 'shows':
-                return <ShowsSection onDelete={(id) => handleDelete(id, 'Show')} onAddShow={() => setIsAddShowModalOpen(true)} />;
+                return <ShowsSection shows={shows} onDelete={handleDeleteShow} onAddShow={() => setIsAddShowModalOpen(true)} />;
             case 'bookings':
-                return <BookingsSection />;
+                return <BookingsSection bookings={bookings} />;
             default:
-                return <OverviewSection stats={stats} setActiveSection={setActiveSection} onAddMovie={() => setIsAddShowModalOpen(true)} />;
+                return <OverviewSection stats={stats} bookings={bookings} setActiveSection={setActiveSection} onAddMovie={() => setIsAddShowModalOpen(true)} />;
         }
     };
 
@@ -53,6 +120,8 @@ const AdminDashboardPage = () => {
                 isOpen={isAddShowModalOpen}
                 onClose={() => setIsAddShowModalOpen(false)}
                 movies={movies}
+                cinemas={cinemas}
+                onSubmit={handleAddShow}
             />
 
             {/* Sidebar */}
@@ -127,7 +196,10 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
 
 /* --- Sub-Sections --- */
 
-const OverviewSection = ({ stats, setActiveSection, onAddMovie }) => {
+const OverviewSection = ({ stats, bookings = [], setActiveSection, onAddMovie }) => {
+    // Get recent bookings (last 5)
+    const recentBookings = bookings.slice(0, 5);
+
     return (
         <div className="animate-fade-in space-y-8">
             <div className="flex justify-between items-center">
@@ -139,7 +211,7 @@ const OverviewSection = ({ stats, setActiveSection, onAddMovie }) => {
                     onClick={onAddMovie}
                     className="btn btn-primary shadow-lg shadow-red-500/20"
                 >
-                    <Plus className="w-5 h-5" /> Add New Movie
+                    <Plus className="w-5 h-5" /> Add New Show
                 </button>
             </div>
 
@@ -165,20 +237,36 @@ const OverviewSection = ({ stats, setActiveSection, onAddMovie }) => {
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                     <h2 className="text-lg font-bold text-[var(--color-light)] mb-6">Recent Bookings</h2>
                     <div className="space-y-4">
-                        {[1, 2, 3, 4, 5].map((_, i) => (
-                            <div key={i} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-100">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs">
-                                        {'U' + (i + 1)}
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-[var(--color-light)] text-sm">User {i + 1}</p>
-                                        <p className="text-xs text-gray-500">Booked 2 tickets for <span className="font-medium text-[var(--color-primary)]">Dune: Part Two</span></p>
-                                    </div>
-                                </div>
-                                <span className="text-xs font-mono text-gray-400">{i * 5 + 2} mins ago</span>
+                        {recentBookings.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400">
+                                <Ticket className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                <p>No recent bookings</p>
                             </div>
-                        ))}
+                        ) : (
+                            recentBookings.map((booking) => (
+                                <div key={booking.booking_id} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-100">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs ${booking.status === 'confirmed' ? 'bg-green-500' :
+                                            booking.status === 'cancelled' ? 'bg-red-500' : 'bg-gray-400'
+                                            }`}>
+                                            #{booking.booking_id}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-[var(--color-light)] text-sm">{booking.contact_email}</p>
+                                            <p className="text-xs text-gray-500">
+                                                Booked {booking.seats?.length || 0} tickets for{' '}
+                                                <span className="font-medium text-[var(--color-primary)]">
+                                                    {booking.show?.movie?.title || `Show #${booking.show_id}`}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-mono text-gray-400">
+                                        {booking.booking_date ? new Date(booking.booking_date).toLocaleDateString() : 'N/A'}
+                                    </span>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
@@ -186,7 +274,7 @@ const OverviewSection = ({ stats, setActiveSection, onAddMovie }) => {
     );
 };
 
-const MoviesSection = ({ onDelete, onAddMovie }) => {
+const MoviesSection = ({ movies = [], onDelete, onAddMovie }) => {
     const [search, setSearch] = useState('');
     const filteredMovies = movies.filter(m => m.title.toLowerCase().includes(search.toLowerCase()));
 
@@ -230,20 +318,20 @@ const MoviesSection = ({ onDelete, onAddMovie }) => {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filteredMovies.map(movie => (
-                                <tr key={movie.id} className="hover:bg-gray-50/50 transition-colors">
+                                <tr key={movie.movie_id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-8 py-4">
                                         <div className="flex items-center gap-4">
-                                            <img src={movie.posterUrl} alt="" className="w-10 h-14 object-cover rounded-lg shadow-sm" />
+                                            <img src={movie.poster_url} alt="" className="w-10 h-14 object-cover rounded-lg shadow-sm" />
                                             <div>
                                                 <div className="font-bold text-[var(--color-light)]">{movie.title}</div>
-                                                <div className="text-xs text-gray-400">{Math.floor(movie.durationMins / 60)}h {movie.durationMins % 60}m</div>
+                                                <div className="text-xs text-gray-400">{Math.floor(movie.duration_mins / 60)}h {movie.duration_mins % 60}m</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-gray-600 text-sm font-medium">
                                         <div className="flex flex-wrap gap-1">
-                                            {movie.genres.map(g => (
-                                                <span key={g} className="px-2 py-1 bg-gray-100 rounded-lg text-xs">{g}</span>
+                                            {movie.genres?.map(g => (
+                                                <span key={g.genre || g} className="px-2 py-1 bg-gray-100 rounded-lg text-xs">{g.genre || g}</span>
                                             ))}
                                         </div>
                                     </td>
@@ -257,7 +345,7 @@ const MoviesSection = ({ onDelete, onAddMovie }) => {
                                             <button className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors">
                                                 <Edit className="w-4 h-4" />
                                             </button>
-                                            <button onClick={() => onDelete(movie.id)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
+                                            <button onClick={() => onDelete(movie.movie_id)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
                                                 <Trash className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -272,7 +360,7 @@ const MoviesSection = ({ onDelete, onAddMovie }) => {
     );
 };
 
-const ShowsSection = ({ onDelete, onAddShow }) => {
+const ShowsSection = ({ shows = [], onDelete, onAddShow }) => {
     return (
         <div className="animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -293,7 +381,7 @@ const ShowsSection = ({ onDelete, onAddShow }) => {
                     <table className="w-full text-left">
                         <thead className="text-xs uppercase bg-gray-50 text-gray-500 font-bold tracking-wider">
                             <tr>
-                                <th className="px-8 py-4">Movie ID</th>
+                                <th className="px-8 py-4">Movie</th>
                                 <th className="px-6 py-4">Cinema & Screen</th>
                                 <th className="px-6 py-4">Time</th>
                                 <th className="px-6 py-4">Price</th>
@@ -301,32 +389,36 @@ const ShowsSection = ({ onDelete, onAddShow }) => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {shows.slice(0, 8).map(show => ( // Limit for demo
-                                <tr key={show.id} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="px-8 py-4 text-sm font-bold text-[var(--color-light)]">#{show.movieId}</td>
+                            {shows.slice(0, 15).map(show => (
+                                <tr key={show.show_id} className="hover:bg-gray-50/50 transition-colors">
+                                    <td className="px-8 py-4">
+                                        <div className="text-sm font-bold text-[var(--color-light)]">
+                                            {show.movie?.title || `Movie #${show.movie_id}`}
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-gray-700 text-sm">{show.cinemaName.split(' - ')[0]}</div>
-                                        <div className="text-xs text-gray-400 font-medium">{show.screenName}</div>
+                                        <div className="font-bold text-gray-700 text-sm">{show.cinema?.name || 'N/A'}</div>
+                                        <div className="text-xs text-gray-400 font-medium">{show.screen_name}</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col gap-1">
                                             <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
-                                                <Calendar className="w-3 h-3" /> {new Date(show.date).toLocaleDateString()}
+                                                <Calendar className="w-3 h-3" /> {show.start_time ? new Date(show.start_time).toLocaleDateString() : 'N/A'}
                                             </div>
                                             <div className="flex items-center gap-2 text-sm font-bold text-[var(--color-light)]">
-                                                <Clock className="w-3 h-3 text-[var(--color-primary)]" /> {formatShowTime(show.time)}
+                                                <Clock className="w-3 h-3 text-[var(--color-primary)]" /> {show.start_time ? formatShowTime(show.start_time) : 'N/A'}
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 font-mono text-sm font-bold text-gray-600">
-                                        {formatPrice(show.priceLkr)}
+                                        {formatPrice(show.ticket_price)}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors">
                                                 <Edit className="w-4 h-4" />
                                             </button>
-                                            <button onClick={() => onDelete(show.id)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
+                                            <button onClick={() => onDelete(show.show_id)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
                                                 <Trash className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -341,20 +433,13 @@ const ShowsSection = ({ onDelete, onAddShow }) => {
     );
 };
 
-const BookingsSection = () => {
-    // Dummy bookings data
-    const bookings = [
-        { id: 'BK001', user: 'User 1', movie: 'Dune: Part Two', date: '2026-02-10', seats: 2, total: 5000, status: 'Confirmed' },
-        { id: 'BK002', user: 'User 2', movie: 'Kung Fu Panda 4', date: '2026-02-12', seats: 4, total: 8000, status: 'Completed' },
-        { id: 'BK003', user: 'User 3', movie: 'Civil War', date: '2026-02-14', seats: 1, total: 2500, status: 'Cancelled' },
-    ];
-
+const BookingsSection = ({ bookings = [] }) => {
     return (
         <div className="animate-fade-in">
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h2 className="text-2xl font-bold text-[var(--color-light)]">Bookings</h2>
-                    <p className="text-gray-500 text-sm">View and manage customer bookings</p>
+                    <p className="text-gray-500 text-sm">View and manage customer bookings ({bookings.length} total)</p>
                 </div>
             </div>
 
@@ -370,36 +455,91 @@ const BookingsSection = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {bookings.map(booking => (
-                            <tr key={booking.id} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="px-8 py-4 font-mono text-sm font-bold text-gray-400">#{booking.id}</td>
-                                <td className="px-6 py-4 text-sm font-bold text-gray-700">{booking.user}</td>
+                        {bookings.slice(0, 20).map(booking => (
+                            <tr key={booking.booking_id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="px-8 py-4 font-mono text-sm font-bold text-gray-400">#{booking.booking_id}</td>
+                                <td className="px-6 py-4 text-sm font-bold text-gray-700">{booking.contact_email || booking.user_id}</td>
                                 <td className="px-6 py-4">
-                                    <div className="text-sm font-bold text-[var(--color-light)]">{booking.movie}</div>
-                                    <div className="text-xs text-gray-400">{booking.seats} Seats • {booking.date}</div>
+                                    <div className="text-sm font-bold text-[var(--color-light)]">
+                                        {booking.show?.movie?.title || `Show #${booking.show_id}`}
+                                    </div>
+                                    <div className="text-xs text-gray-400">
+                                        {booking.seats?.length || 0} Seats • {booking.booking_date ? new Date(booking.booking_date).toLocaleDateString() : 'N/A'}
+                                    </div>
                                 </td>
-                                <td className="px-6 py-4 font-bold text-sm">{formatPrice(booking.total)}</td>
+                                <td className="px-6 py-4 font-bold text-sm">{formatPrice(booking.total_amount)}</td>
                                 <td className="px-6 py-4">
-                                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${booking.status === 'Confirmed' ? 'bg-green-50 text-green-600' :
-                                        booking.status === 'Completed' ? 'bg-blue-50 text-blue-600' :
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${booking.status === 'confirmed' ? 'bg-green-50 text-green-600' :
+                                        booking.status === 'completed' ? 'bg-blue-50 text-blue-600' :
                                             'bg-red-50 text-red-600'
                                         }`}>
-                                        {booking.status}
+                                        {booking.status?.toUpperCase()}
                                     </span>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
-                <div className="p-6 text-center border-t border-gray-100">
-                    <button className="text-sm font-bold text-[var(--color-primary)] hover:underline">View All Transactions</button>
-                </div>
+                {bookings.length === 0 && (
+                    <div className="p-12 text-center text-gray-400">
+                        <Ticket className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                        <p className="font-bold">No bookings yet</p>
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
-const AddShowModal = ({ isOpen, onClose, movies }) => {
+const AddShowModal = ({ isOpen, onClose, movies = [], cinemas = [], onSubmit }) => {
+    const [formData, setFormData] = useState({
+        movie_id: '',
+        cinema_id: '',
+        screen_name: 'Screen 1',
+        screen_type: 'Standard',
+        date: '',
+        time: '',
+        ticket_price: 1500
+    });
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.movie_id || !formData.cinema_id || !formData.date || !formData.time) {
+            toast.error("Please fill in all required fields");
+            return;
+        }
+
+        // Combine date and time into ISO datetime
+        const start_time = `${formData.date}T${formData.time}:00`;
+
+        setSubmitting(true);
+        try {
+            await onSubmit({
+                movie_id: parseInt(formData.movie_id),
+                cinema_id: parseInt(formData.cinema_id),
+                screen_name: formData.screen_name,
+                screen_type: formData.screen_type,
+                start_time,
+                ticket_price: parseFloat(formData.ticket_price)
+            });
+            // Reset form
+            setFormData({
+                movie_id: '',
+                cinema_id: '',
+                screen_name: 'Screen 1',
+                screen_type: 'Standard',
+                date: '',
+                time: '',
+                ticket_price: 1500
+            });
+        } catch (err) {
+            // Error handled in parent
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -412,50 +552,96 @@ const AddShowModal = ({ isOpen, onClose, movies }) => {
                     </button>
                 </div>
 
-                <form className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Select Movie</label>
-                        <select className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Select Movie *</label>
+                        <select
+                            value={formData.movie_id}
+                            onChange={(e) => setFormData({ ...formData, movie_id: e.target.value })}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                        >
                             <option value="">Select a movie...</option>
                             {movies.map(movie => (
-                                <option key={movie.id} value={movie.id}>{movie.title}</option>
+                                <option key={movie.movie_id} value={movie.movie_id}>{movie.title}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Cinema *</label>
+                        <select
+                            value={formData.cinema_id}
+                            onChange={(e) => setFormData({ ...formData, cinema_id: e.target.value })}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                        >
+                            <option value="">Select cinema...</option>
+                            {cinemas.map(cinema => (
+                                <option key={cinema.cinema_id} value={cinema.cinema_id}>{cinema.name} - {cinema.location}</option>
                             ))}
                         </select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Date</label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input type="date" className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600" />
-                            </div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Screen Name</label>
+                            <input
+                                type="text"
+                                value={formData.screen_name}
+                                onChange={(e) => setFormData({ ...formData, screen_name: e.target.value })}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                            />
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Time</label>
-                            <div className="relative">
-                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input type="time" className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600" />
-                            </div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Screen Type</label>
+                            <select
+                                value={formData.screen_type}
+                                onChange={(e) => setFormData({ ...formData, screen_type: e.target.value })}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                            >
+                                <option value="Standard">Standard</option>
+                                <option value="IMAX">IMAX</option>
+                                <option value="Dolby Atmos">Dolby Atmos</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Film Hall (Cinema)</label>
-                        <select className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600">
-                            <option value="">Select cinema hall...</option>
-                            <option value="Scope Cinemas - Colombo City Centre">Scope Cinemas - CCC (Dolby Atmos)</option>
-                            <option value="PVR Cinemas - One Galle Face">PVR Cinemas - OGF (LUXE)</option>
-                            <option value="Liberty by Scope Cinemas">Liberty by Scope (4K Laser)</option>
-                            <option value="Savoy Premiere">Savoy Premiere (3D)</option>
-                        </select>
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Date *</label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="date"
+                                    value={formData.date}
+                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Time *</label>
+                            <div className="relative">
+                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="time"
+                                    value={formData.time}
+                                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Ticket Price (LKR)</label>
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">LKR</span>
-                            <input type="number" placeholder="2500" className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600" />
+                            <input
+                                type="number"
+                                value={formData.ticket_price}
+                                onChange={(e) => setFormData({ ...formData, ticket_price: e.target.value })}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                            />
                         </div>
                     </div>
 
@@ -463,8 +649,12 @@ const AddShowModal = ({ isOpen, onClose, movies }) => {
                         <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" className="flex-1 btn btn-primary py-3 rounded-xl shadow-lg shadow-red-500/20 font-bold">
-                            Add Schedule
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="flex-1 btn btn-primary py-3 rounded-xl shadow-lg shadow-red-500/20 font-bold disabled:opacity-50"
+                        >
+                            {submitting ? 'Adding...' : 'Add Show'}
                         </button>
                     </div>
                 </form>
@@ -473,6 +663,5 @@ const AddShowModal = ({ isOpen, onClose, movies }) => {
     );
 };
 
-import { X } from 'lucide-react'; // Import X icon
-
 export default AdminDashboardPage;
+

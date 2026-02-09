@@ -80,11 +80,18 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
 @router.get("/user/{user_id}", response_model=List[schemas.BookingWithShow])
 def get_user_bookings(user_id: str, db: Session = Depends(get_db)):
     """Get all bookings for a specific user with show details."""
-    bookings = db.query(models.Booking).options(
-        # Eager load show and cinema for each booking
-    ).filter(
+    bookings = db.query(models.Booking).filter(
         models.Booking.user_id == user_id
     ).order_by(models.Booking.booking_date.desc()).all()
+    return bookings
+
+
+@router.get("/", response_model=List[schemas.BookingWithShow])
+def get_all_bookings(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Get all bookings (admin endpoint)."""
+    bookings = db.query(models.Booking).order_by(
+        models.Booking.booking_date.desc()
+    ).offset(skip).limit(limit).all()
     return bookings
 
 

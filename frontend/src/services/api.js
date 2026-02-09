@@ -25,14 +25,45 @@ export const getMovieShows = async (id) => {
     return response.data;
 };
 
+export const createMovie = async (movieData) => {
+    const response = await api.post('/movies/', movieData);
+    return response.data;
+};
+
+export const deleteMovie = async (id) => {
+    const response = await api.delete(`/movies/${id}`);
+    return response.data;
+};
+
 // --- Shows ---
+export const getAllShows = async (params = {}) => {
+    const response = await api.get('/shows/', { params });
+    return response.data;
+};
+
 export const getShowById = async (id) => {
     const response = await api.get(`/shows/${id}`);
     return response.data;
 };
 
+export const createShow = async (showData) => {
+    const response = await api.post('/shows/', showData);
+    return response.data;
+};
+
+export const deleteShow = async (id) => {
+    const response = await api.delete(`/shows/${id}`);
+    return response.data;
+};
+
 export const getBookedSeats = async (showId) => {
     const response = await api.get(`/bookings/show/${showId}/booked-seats`);
+    return response.data;
+};
+
+// --- Cinemas ---
+export const getAllCinemas = async () => {
+    const response = await api.get('/shows/cinemas/all');
     return response.data;
 };
 
@@ -47,8 +78,12 @@ export const getUserBookings = async (userId) => {
     return response.data;
 };
 
+export const getAllBookings = async (params = {}) => {
+    const response = await api.get('/bookings/', { params });
+    return response.data;
+};
+
 export const cancelBooking = async (bookingId) => {
     const response = await api.patch(`/bookings/${bookingId}/cancel`);
     return response.data;
 };
-
