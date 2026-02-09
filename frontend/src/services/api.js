@@ -35,6 +35,11 @@ export const deleteMovie = async (id) => {
     return response.data;
 };
 
+export const updateMovie = async (id, movieData) => {
+    const response = await api.put(`/movies/${id}`, movieData);
+    return response.data;
+};
+
 // --- Shows ---
 export const getAllShows = async (params = {}) => {
     const response = await api.get('/shows/', { params });
@@ -69,6 +74,11 @@ export const createCinema = async (cinemaData) => {
 
 export const deleteCinema = async (id) => {
     const response = await api.delete(`/shows/cinemas/${id}`);
+    return response.data;
+};
+
+export const updateCinema = async (id, cinemaData) => {
+    const response = await api.put(`/shows/cinemas/${id}`, cinemaData);
     return response.data;
 };
 

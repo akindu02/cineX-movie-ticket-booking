@@ -88,3 +88,26 @@ def delete_cinema(cinema_id: int, db: Session = Depends(get_db)):
     db.delete(cinema)
     db.commit()
     return {"message": "Cinema deleted successfully", "cinema_id": cinema_id}
+
+
+@router.put("/cinemas/{cinema_id}", response_model=schemas.Cinema)
+def update_cinema(cinema_id: int, cinema_update: CinemaCreate, db: Session = Depends(get_db)):
+    """Update an existing cinema."""
+    db_cinema = db.query(models.Cinema).filter(models.Cinema.cinema_id == cinema_id).first()
+    if not db_cinema:
+        raise HTTPException(status_code=404, detail="Cinema not found")
+    
+    # Check if another cinema with the same name exists
+    existing = db.query(models.Cinema).filter(
+        models.Cinema.name == cinema_update.name,
+        models.Cinema.cinema_id != cinema_id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Another cinema with this name already exists")
+    
+    db_cinema.name = cinema_update.name
+    db_cinema.location = cinema_update.location
+    
+    db.commit()
+    db.refresh(db_cinema)
+    return db_cinema

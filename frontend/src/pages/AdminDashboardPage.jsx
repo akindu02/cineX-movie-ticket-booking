@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatPrice, formatShowTime } from '../data/shows';
-import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createCinema, deleteCinema, createMovie, getAllCinemas } from '../services/api';
+import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createCinema, deleteCinema, updateCinema, createMovie, updateMovie, getAllCinemas } from '../services/api';
 import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, Coins, Calendar, TrendingUp, Clock, LogOut, Bell, Settings, Shield, Loader, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -9,6 +9,8 @@ const AdminDashboardPage = () => {
     const [activeSection, setActiveSection] = useState('overview');
     const [isAddCinemaModalOpen, setIsAddCinemaModalOpen] = useState(false);
     const [isAddMovieModalOpen, setIsAddMovieModalOpen] = useState(false);
+    const [editingMovie, setEditingMovie] = useState(null);
+    const [editingCinema, setEditingCinema] = useState(null);
     const navigate = useNavigate();
 
     // API Data State
@@ -96,19 +98,54 @@ const AdminDashboardPage = () => {
 
     const handleAddMovie = async (movieData) => {
         try {
-            console.log('handleAddMovie called with:', movieData);
-            const newMovie = await createMovie(movieData);
-            console.log('Movie created successfully:', newMovie);
-            toast.success("Movie created successfully");
-            setMovies(prev => [newMovie, ...prev]);
+            if (editingMovie) {
+                // Update existing movie
+                const updatedMovie = await updateMovie(editingMovie.movie_id, movieData);
+                toast.success("Movie updated successfully");
+                setMovies(prev => prev.map(m => m.movie_id === editingMovie.movie_id ? updatedMovie : m));
+            } else {
+                // Create new movie
+                const newMovie = await createMovie(movieData);
+                toast.success("Movie created successfully");
+                setMovies(prev => [newMovie, ...prev]);
+            }
             setIsAddMovieModalOpen(false);
+            setEditingMovie(null);
         } catch (err) {
-            console.error("Failed to create movie - Full error:", err);
-            console.error("Error response:", err.response);
-            console.error("Error data:", err.response?.data);
-            const errorMessage = err.response?.data?.detail || err.message || "Failed to create movie";
-            toast.error(errorMessage);
+            console.error("Failed to save movie:", err);
+            toast.error(err.response?.data?.detail || "Failed to save movie");
         }
+    };
+
+    const handleEditMovie = (movie) => {
+        setEditingMovie(movie);
+        setIsAddMovieModalOpen(true);
+    };
+
+    const handleAddCinemaSubmit = async (cinemaData) => {
+        try {
+            if (editingCinema) {
+                // Update existing cinema
+                const updatedCinema = await updateCinema(editingCinema.cinema_id, cinemaData);
+                toast.success("Cinema updated successfully");
+                setCinemas(prev => prev.map(c => c.cinema_id === editingCinema.cinema_id ? updatedCinema : c));
+            } else {
+                // Create new cinema
+                const newCinema = await createCinema(cinemaData);
+                toast.success("Cinema created successfully");
+                setCinemas(prev => [newCinema, ...prev]);
+            }
+            setIsAddCinemaModalOpen(false);
+            setEditingCinema(null);
+        } catch (err) {
+            console.error("Failed to save cinema:", err);
+            toast.error(err.response?.data?.detail || "Failed to save cinema");
+        }
+    };
+
+    const handleEditCinema = (cinema) => {
+        setEditingCinema(cinema);
+        setIsAddCinemaModalOpen(true);
     };
 
     const handleDeleteCinema = async (cinemaId) => {
@@ -122,6 +159,7 @@ const AdminDashboardPage = () => {
         }
     };
 
+
     const renderContent = () => {
         if (loading) {
             return (
@@ -133,9 +171,19 @@ const AdminDashboardPage = () => {
 
         switch (activeSection) {
             case 'movies':
-                return <MoviesSection movies={movies} onDelete={handleDeleteMovie} onAddMovie={() => setIsAddMovieModalOpen(true)} />;
+                return <MoviesSection
+                    movies={movies}
+                    onDelete={handleDeleteMovie}
+                    onEdit={handleEditMovie}
+                    onAddMovie={() => { setEditingMovie(null); setIsAddMovieModalOpen(true); }}
+                />;
             case 'cinemas':
-                return <CinemasSection cinemas={cinemas} onDelete={handleDeleteCinema} onAddCinema={() => setIsAddCinemaModalOpen(true)} />;
+                return <CinemasSection
+                    cinemas={cinemas}
+                    onDelete={handleDeleteCinema}
+                    onEdit={handleEditCinema}
+                    onAddCinema={() => { setEditingCinema(null); setIsAddCinemaModalOpen(true); }}
+                />;
             case 'bookings':
                 return <BookingsSection bookings={bookings} />;
             default:
@@ -147,13 +195,15 @@ const AdminDashboardPage = () => {
         <div className="flex min-h-screen pt-20 bg-[var(--color-dark-100)]">
             <AddCinemaModal
                 isOpen={isAddCinemaModalOpen}
-                onClose={() => setIsAddCinemaModalOpen(false)}
-                onSubmit={handleAddCinema}
+                onClose={() => { setIsAddCinemaModalOpen(false); setEditingCinema(null); }}
+                onSubmit={handleAddCinemaSubmit}
+                editingCinema={editingCinema}
             />
             <AddMovieModal
                 isOpen={isAddMovieModalOpen}
-                onClose={() => setIsAddMovieModalOpen(false)}
+                onClose={() => { setIsAddMovieModalOpen(false); setEditingMovie(null); }}
                 onSubmit={handleAddMovie}
+                editingMovie={editingMovie}
             />
 
             {/* Sidebar */}
@@ -300,7 +350,7 @@ const OverviewSection = ({ stats, bookings = [], setActiveSection }) => {
     );
 };
 
-const MoviesSection = ({ movies = [], onDelete, onAddMovie }) => {
+const MoviesSection = ({ movies = [], onDelete, onEdit, onAddMovie }) => {
     const [search, setSearch] = useState('');
     const [deleteConfirm, setDeleteConfirm] = useState(null);
     const filteredMovies = movies.filter(m => m.title.toLowerCase().includes(search.toLowerCase()));
@@ -429,7 +479,11 @@ const MoviesSection = ({ movies = [], onDelete, onAddMovie }) => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors">
+                                                <button
+                                                    onClick={() => onEdit(movie)}
+                                                    className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors"
+                                                    title="Edit movie"
+                                                >
                                                     <Edit className="w-4 h-4" />
                                                 </button>
                                                 <button
@@ -455,7 +509,7 @@ const MoviesSection = ({ movies = [], onDelete, onAddMovie }) => {
     );
 };
 
-const CinemasSection = ({ cinemas = [], onDelete, onAddCinema }) => {
+const CinemasSection = ({ cinemas = [], onDelete, onEdit, onAddCinema }) => {
     const [search, setSearch] = useState('');
     const [deleteConfirm, setDeleteConfirm] = useState(null);
     const filteredCinemas = cinemas.filter(c =>
@@ -558,14 +612,18 @@ const CinemasSection = ({ cinemas = [], onDelete, onAddCinema }) => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors">
+                                                <button
+                                                    onClick={() => onEdit(cinema)}
+                                                    className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors"
+                                                    title="Edit cinema"
+                                                >
                                                     <Edit className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(cinema.cinema_id)}
                                                     className={`p-2 rounded-lg transition-colors ${deleteConfirm === cinema.cinema_id
-                                                            ? 'bg-red-500 text-white'
-                                                            : 'hover:bg-red-50 text-gray-400 hover:text-red-500'
+                                                        ? 'bg-red-500 text-white'
+                                                        : 'hover:bg-red-50 text-gray-400 hover:text-red-500'
                                                         }`}
                                                     title={deleteConfirm === cinema.cinema_id ? 'Click again to confirm' : 'Delete cinema'}
                                                 >
@@ -642,12 +700,24 @@ const BookingsSection = ({ bookings = [] }) => {
     );
 };
 
-const AddCinemaModal = ({ isOpen, onClose, onSubmit }) => {
+const AddCinemaModal = ({ isOpen, onClose, onSubmit, editingCinema }) => {
     const [formData, setFormData] = useState({
         name: '',
         location: ''
     });
     const [submitting, setSubmitting] = useState(false);
+
+    // Pre-fill form when editing
+    useEffect(() => {
+        if (editingCinema) {
+            setFormData({
+                name: editingCinema.name || '',
+                location: editingCinema.location || ''
+            });
+        } else {
+            setFormData({ name: '', location: '' });
+        }
+    }, [editingCinema, isOpen]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -676,11 +746,15 @@ const AddCinemaModal = ({ isOpen, onClose, onSubmit }) => {
 
     if (!isOpen) return null;
 
+    const isEditing = !!editingCinema;
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-3xl w-full max-w-lg mx-4 shadow-2xl relative overflow-hidden">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 className="text-xl font-bold text-[var(--color-light)]">Add New Cinema</h3>
+                    <h3 className="text-xl font-bold text-[var(--color-light)]">
+                        {isEditing ? 'Edit Cinema' : 'Add New Cinema'}
+                    </h3>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
@@ -718,7 +792,7 @@ const AddCinemaModal = ({ isOpen, onClose, onSubmit }) => {
                             disabled={submitting}
                             className="flex-1 btn btn-primary py-3 rounded-xl shadow-lg shadow-red-500/20 font-bold disabled:opacity-50"
                         >
-                            {submitting ? 'Adding...' : 'Add Cinema'}
+                            {submitting ? (isEditing ? 'Saving...' : 'Adding...') : (isEditing ? 'Save Changes' : 'Add Cinema')}
                         </button>
                     </div>
                 </form>
@@ -727,7 +801,7 @@ const AddCinemaModal = ({ isOpen, onClose, onSubmit }) => {
     );
 };
 
-const AddMovieModal = ({ isOpen, onClose, onSubmit }) => {
+const AddMovieModal = ({ isOpen, onClose, onSubmit, editingMovie }) => {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -743,6 +817,35 @@ const AddMovieModal = ({ isOpen, onClose, onSubmit }) => {
     const [submitting, setSubmitting] = useState(false);
 
     const availableGenres = ['Action', 'Adventure', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Thriller', 'Romance', 'Animation', 'Fantasy'];
+
+    // Pre-fill form when editing
+    useEffect(() => {
+        if (editingMovie) {
+            setFormData({
+                title: editingMovie.title || '',
+                description: editingMovie.description || '',
+                duration_mins: editingMovie.duration_mins || 120,
+                language: editingMovie.language || 'English',
+                release_date: editingMovie.release_date || '',
+                rating: editingMovie.rating || 0,
+                poster_url: editingMovie.poster_url || '',
+                trailer_url: editingMovie.trailer_url || '',
+                genres: editingMovie.genres?.map(g => g.genre) || []
+            });
+        } else {
+            setFormData({
+                title: '',
+                description: '',
+                duration_mins: 120,
+                language: 'English',
+                release_date: '',
+                rating: 0,
+                poster_url: '',
+                trailer_url: '',
+                genres: []
+            });
+        }
+    }, [editingMovie, isOpen]);
 
     const toggleGenre = (genre) => {
         setFormData(prev => ({
@@ -797,11 +900,15 @@ const AddMovieModal = ({ isOpen, onClose, onSubmit }) => {
 
     if (!isOpen) return null;
 
+    const isEditing = !!editingMovie;
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-3xl w-full max-w-2xl mx-4 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 sticky top-0">
-                    <h3 className="text-xl font-bold text-[var(--color-light)]">Add New Movie</h3>
+                    <h3 className="text-xl font-bold text-[var(--color-light)]">
+                        {isEditing ? 'Edit Movie' : 'Add New Movie'}
+                    </h3>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
@@ -925,7 +1032,7 @@ const AddMovieModal = ({ isOpen, onClose, onSubmit }) => {
                             disabled={submitting}
                             className="flex-1 btn btn-primary py-3 rounded-xl shadow-lg shadow-red-500/20 font-bold disabled:opacity-50"
                         >
-                            {submitting ? 'Adding...' : 'Add Movie'}
+                            {submitting ? (isEditing ? 'Saving...' : 'Adding...') : (isEditing ? 'Save Changes' : 'Add Movie')}
                         </button>
                     </div>
                 </form>
