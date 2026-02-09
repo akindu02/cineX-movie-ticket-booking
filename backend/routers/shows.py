@@ -68,3 +68,23 @@ def create_cinema(cinema: CinemaCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_cinema)
     return db_cinema
+
+
+@router.delete("/cinemas/{cinema_id}")
+def delete_cinema(cinema_id: int, db: Session = Depends(get_db)):
+    """Delete a cinema by ID."""
+    cinema = db.query(models.Cinema).filter(models.Cinema.cinema_id == cinema_id).first()
+    if not cinema:
+        raise HTTPException(status_code=404, detail="Cinema not found")
+    
+    # Check if cinema has associated shows
+    shows_count = db.query(models.Show).filter(models.Show.cinema_id == cinema_id).count()
+    if shows_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete cinema. It has {shows_count} associated shows. Delete the shows first."
+        )
+    
+    db.delete(cinema)
+    db.commit()
+    return {"message": "Cinema deleted successfully", "cinema_id": cinema_id}

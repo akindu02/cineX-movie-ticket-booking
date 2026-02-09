@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatPrice, formatShowTime } from '../data/shows';
-import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createCinema, createMovie, getAllCinemas } from '../services/api';
+import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createCinema, deleteCinema, createMovie, getAllCinemas } from '../services/api';
 import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, Coins, Calendar, TrendingUp, Clock, LogOut, Bell, Settings, Shield, Loader, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -111,6 +111,17 @@ const AdminDashboardPage = () => {
         }
     };
 
+    const handleDeleteCinema = async (cinemaId) => {
+        try {
+            await deleteCinema(cinemaId);
+            toast.success("Cinema deleted successfully");
+            setCinemas(prev => prev.filter(c => c.cinema_id !== cinemaId));
+        } catch (err) {
+            console.error("Failed to delete cinema:", err);
+            toast.error(err.response?.data?.detail || "Failed to delete cinema");
+        }
+    };
+
     const renderContent = () => {
         if (loading) {
             return (
@@ -124,7 +135,7 @@ const AdminDashboardPage = () => {
             case 'movies':
                 return <MoviesSection movies={movies} onDelete={handleDeleteMovie} onAddMovie={() => setIsAddMovieModalOpen(true)} />;
             case 'cinemas':
-                return <CinemasSection cinemas={cinemas} onAddCinema={() => setIsAddCinemaModalOpen(true)} />;
+                return <CinemasSection cinemas={cinemas} onDelete={handleDeleteCinema} onAddCinema={() => setIsAddCinemaModalOpen(true)} />;
             case 'bookings':
                 return <BookingsSection bookings={bookings} />;
             default:
@@ -444,13 +455,31 @@ const MoviesSection = ({ movies = [], onDelete, onAddMovie }) => {
     );
 };
 
-const CinemasSection = ({ cinemas = [], onAddCinema }) => {
+const CinemasSection = ({ cinemas = [], onDelete, onAddCinema }) => {
+    const [search, setSearch] = useState('');
+    const [deleteConfirm, setDeleteConfirm] = useState(null);
+    const filteredCinemas = cinemas.filter(c =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.location.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const handleDelete = (cinemaId) => {
+        if (deleteConfirm === cinemaId) {
+            onDelete(cinemaId);
+            setDeleteConfirm(null);
+        } else {
+            setDeleteConfirm(cinemaId);
+            // Auto-reset after 3 seconds
+            setTimeout(() => setDeleteConfirm(null), 3000);
+        }
+    };
+
     return (
         <div className="animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-[var(--color-light)]">Cinemas</h2>
-                    <p className="text-gray-500 text-sm">Manage cinema locations</p>
+                    <p className="text-gray-500 text-sm">Manage cinema locations ({cinemas.length} cinemas)</p>
                 </div>
                 <button
                     onClick={onAddCinema}
@@ -461,52 +490,93 @@ const CinemasSection = ({ cinemas = [], onAddCinema }) => {
             </div>
 
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="text-xs uppercase bg-gray-50 text-gray-500 font-bold tracking-wider">
-                            <tr>
-                                <th className="px-8 py-4">Cinema ID</th>
-                                <th className="px-6 py-4">Name</th>
-                                <th className="px-6 py-4">Location</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {cinemas.map(cinema => (
-                                <tr key={cinema.cinema_id} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="px-8 py-4">
-                                        <div className="text-sm font-bold text-gray-400">
-                                            #{cinema.cinema_id}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="font-bold text-[var(--color-light)] text-sm">{cinema.name}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Monitor className="w-4 h-4 text-gray-400" />
-                                            {cinema.location}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors">
-                                                <Edit className="w-4 h-4" />
-                                            </button>
-                                            <button className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
-                                                <Trash className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="p-6 border-b border-gray-100">
+                    <div className="relative max-w-md">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search cinemas by name or location..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] focus:bg-white transition-all font-medium"
+                        />
+                    </div>
                 </div>
-                {cinemas.length === 0 && (
-                    <div className="p-12 text-center text-gray-400">
-                        <Monitor className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                        <p className="font-bold">No cinemas yet</p>
+
+                {filteredCinemas.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <Monitor className="w-16 h-16 mx-auto mb-4 text-gray-200" />
+                        <h3 className="text-lg font-bold text-gray-400 mb-2">
+                            {search ? 'No cinemas found' : 'No cinemas yet'}
+                        </h3>
+                        <p className="text-gray-400 text-sm mb-6">
+                            {search ? 'Try a different search term' : 'Add your first cinema to get started'}
+                        </p>
+                        {!search && (
+                            <button
+                                onClick={onAddCinema}
+                                className="btn btn-primary px-6 py-2.5 rounded-xl"
+                            >
+                                <Plus className="w-5 h-5" /> Add Your First Cinema
+                            </button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="text-xs uppercase bg-gray-50 text-gray-500 font-bold tracking-wider">
+                                <tr>
+                                    <th className="px-8 py-4">Cinema</th>
+                                    <th className="px-6 py-4">Location</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {filteredCinemas.map(cinema => (
+                                    <tr key={cinema.cinema_id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-8 py-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+                                                    <Monitor className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-[var(--color-light)]">{cinema.name}</div>
+                                                    <div className="text-xs text-gray-400">ID: #{cinema.cinema_id}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    </svg>
+                                                </div>
+                                                <span className="text-gray-600 font-medium">{cinema.location}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button className="p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors">
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(cinema.cinema_id)}
+                                                    className={`p-2 rounded-lg transition-colors ${deleteConfirm === cinema.cinema_id
+                                                            ? 'bg-red-500 text-white'
+                                                            : 'hover:bg-red-50 text-gray-400 hover:text-red-500'
+                                                        }`}
+                                                    title={deleteConfirm === cinema.cinema_id ? 'Click again to confirm' : 'Delete cinema'}
+                                                >
+                                                    <Trash className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </div>
