@@ -46,11 +46,6 @@ export const getShowById = async (id) => {
     return response.data;
 };
 
-export const createShow = async (showData) => {
-    const response = await api.post('/shows/', showData);
-    return response.data;
-};
-
 export const deleteShow = async (id) => {
     const response = await api.delete(`/shows/${id}`);
     return response.data;

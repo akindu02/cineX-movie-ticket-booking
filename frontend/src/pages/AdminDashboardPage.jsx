@@ -110,7 +110,7 @@ const AdminDashboardPage = () => {
             case 'bookings':
                 return <BookingsSection bookings={bookings} />;
             default:
-                return <OverviewSection stats={stats} bookings={bookings} setActiveSection={setActiveSection} onAddMovie={() => setIsAddCinemaModalOpen(true)} />;
+                return <OverviewSection stats={stats} bookings={bookings} setActiveSection={setActiveSection} />;
         }
     };
 
@@ -194,7 +194,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
 
 /* --- Sub-Sections --- */
 
-const OverviewSection = ({ stats, bookings = [], setActiveSection, onAddMovie }) => {
+const OverviewSection = ({ stats, bookings = [], setActiveSection }) => {
     // Get recent bookings (last 5)
     const recentBookings = bookings.slice(0, 5);
 
@@ -205,12 +205,6 @@ const OverviewSection = ({ stats, bookings = [], setActiveSection, onAddMovie })
                     <h1 className="text-3xl font-bold text-[var(--color-light)]">Dashboard Overview</h1>
                     <p className="text-gray-500 mt-1">Welcome back, Admin! Here's what's happening today.</p>
                 </div>
-                <button
-                    onClick={onAddMovie}
-                    className="btn btn-primary shadow-lg shadow-red-500/20"
-                >
-                    <Plus className="w-5 h-5" /> Add New Show
-                </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
