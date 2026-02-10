@@ -50,7 +50,22 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
             detail=f"Seats already booked: {', '.join(sorted(conflicts))}"
         )
     
-    # 3. Create the booking record
+    # 3. If user_id is provided, ensure user exists in DB (auto-create for Clerk users)
+    if booking.user_id:
+        existing_user = db.query(models.User).filter(models.User.user_id == booking.user_id).first()
+        if not existing_user:
+            email_name = booking.contact_email.split('@')[0] if booking.contact_email else 'User'
+            new_user = models.User(
+                user_id=booking.user_id,
+                first_name=email_name,
+                last_name='',
+                email=booking.contact_email or '',
+                role='customer'
+            )
+            db.add(new_user)
+            db.commit()
+    
+    # 4. Create the booking record
     db_booking = models.Booking(
         user_id=booking.user_id,
         show_id=booking.show_id,

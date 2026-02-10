@@ -76,6 +76,15 @@ class ShowCreate(BaseModel):
     start_time: datetime
     ticket_price: float
 
+class BatchShowCreate(BaseModel):
+    """Create multiple shows at once with different date/times."""
+    movie_id: int
+    cinema_id: int
+    screen_name: str
+    screen_type: Optional[str] = "2D"
+    start_times: List[datetime]
+    ticket_price: float
+
 class Show(ShowBase):
     show_id: int
     movie_id: Optional[int] = None

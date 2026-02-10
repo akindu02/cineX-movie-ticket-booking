@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatPrice, formatShowTime } from '../data/shows';
-import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createShow, updateShow, createCinema, deleteCinema, updateCinema, createMovie, updateMovie, getAllCinemas } from '../services/api';
+import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createShow, updateShow, createShowsBatch, createCinema, deleteCinema, updateCinema, createMovie, updateMovie, getAllCinemas } from '../services/api';
 import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, Coins, Calendar, TrendingUp, Clock, LogOut, Bell, Settings, Shield, Loader, X, Play } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -165,10 +165,17 @@ const AdminDashboardPage = () => {
     const handleAddShow = async (showData) => {
         try {
             if (editingShow) {
+                // Edit mode: single show update
                 const updatedShow = await updateShow(editingShow.show_id, showData);
                 toast.success("Show updated successfully");
                 setShows(prev => prev.map(s => s.show_id === editingShow.show_id ? updatedShow : s));
+            } else if (showData.start_times && showData.start_times.length > 0) {
+                // Batch create mode: multiple show times
+                const newShows = await createShowsBatch(showData);
+                toast.success(`${newShows.length} show(s) created successfully`);
+                setShows(prev => [...newShows, ...prev]);
             } else {
+                // Single create fallback
                 const newShow = await createShow(showData);
                 toast.success("Show created successfully");
                 setShows(prev => [newShow, ...prev]);
@@ -1262,65 +1269,106 @@ const AddShowModal = ({ isOpen, onClose, onSubmit, editingShow, movies = [], cin
         cinema_id: '',
         screen_name: '',
         screen_type: '2D',
-        start_time: '',
         ticket_price: 500
     });
+    // Multiple show times for batch create
+    const [showTimes, setShowTimes] = useState(['']);
+    // Single show time for edit mode
+    const [singleTime, setSingleTime] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     const screenTypes = ['2D', '3D', 'IMAX', '4DX', 'Dolby Atmos'];
 
-    // Pre-fill form when editing
+    // Pre-fill form when editing vs reset for new
     useEffect(() => {
         if (editingShow) {
-            // Convert datetime to local format for input
             const dt = new Date(editingShow.start_time);
             const localDateTime = dt.toISOString().slice(0, 16);
-
             setFormData({
                 movie_id: editingShow.movie_id || '',
                 cinema_id: editingShow.cinema_id || '',
                 screen_name: editingShow.screen_name || '',
                 screen_type: editingShow.screen_type || '2D',
-                start_time: localDateTime,
                 ticket_price: editingShow.ticket_price || 500
             });
+            setSingleTime(localDateTime);
+            setShowTimes(['']);
         } else {
             setFormData({
                 movie_id: '',
                 cinema_id: '',
                 screen_name: '',
                 screen_type: '2D',
-                start_time: '',
                 ticket_price: 500
             });
+            setSingleTime('');
+            setShowTimes(['']);
         }
     }, [editingShow, isOpen]);
 
+    const addTimeSlot = () => {
+        setShowTimes(prev => [...prev, '']);
+    };
+
+    const removeTimeSlot = (index) => {
+        if (showTimes.length <= 1) return;
+        setShowTimes(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const updateTimeSlot = (index, value) => {
+        setShowTimes(prev => prev.map((t, i) => i === index ? value : t));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.movie_id || !formData.cinema_id || !formData.screen_name || !formData.start_time) {
+        const isEditing = !!editingShow;
+
+        if (!formData.movie_id || !formData.cinema_id || !formData.screen_name) {
             toast.error("Please fill in all required fields");
             return;
         }
 
+        if (isEditing) {
+            if (!singleTime) {
+                toast.error("Please select a date & time");
+                return;
+            }
+        } else {
+            const validTimes = showTimes.filter(t => t.trim() !== '');
+            if (validTimes.length === 0) {
+                toast.error("Please add at least one show date & time");
+                return;
+            }
+        }
+
         setSubmitting(true);
         try {
-            await onSubmit({
-                movie_id: parseInt(formData.movie_id),
-                cinema_id: parseInt(formData.cinema_id),
-                screen_name: formData.screen_name.trim(),
-                screen_type: formData.screen_type,
-                start_time: formData.start_time,
-                ticket_price: parseFloat(formData.ticket_price)
-            });
-            setFormData({
-                movie_id: '',
-                cinema_id: '',
-                screen_name: '',
-                screen_type: '2D',
-                start_time: '',
-                ticket_price: 500
-            });
+            if (isEditing) {
+                // Edit mode: single update
+                await onSubmit({
+                    movie_id: parseInt(formData.movie_id),
+                    cinema_id: parseInt(formData.cinema_id),
+                    screen_name: formData.screen_name.trim(),
+                    screen_type: formData.screen_type,
+                    start_time: singleTime,
+                    ticket_price: parseFloat(formData.ticket_price)
+                });
+            } else {
+                // Create mode: batch create with multiple times
+                const validTimes = showTimes.filter(t => t.trim() !== '');
+                await onSubmit({
+                    movie_id: parseInt(formData.movie_id),
+                    cinema_id: parseInt(formData.cinema_id),
+                    screen_name: formData.screen_name.trim(),
+                    screen_type: formData.screen_type,
+                    start_times: validTimes,
+                    ticket_price: parseFloat(formData.ticket_price)
+                });
+            }
+            // Reset form
+            setFormData({ movie_id: '', cinema_id: '', screen_name: '', screen_type: '2D', ticket_price: 500 });
+            setShowTimes(['']);
+            setSingleTime('');
         } catch (err) {
             // Error handled in parent
         } finally {
@@ -1331,20 +1379,36 @@ const AddShowModal = ({ isOpen, onClose, onSubmit, editingShow, movies = [], cin
     if (!isOpen) return null;
 
     const isEditing = !!editingShow;
+    const validTimesCount = showTimes.filter(t => t.trim() !== '').length;
+
+    // Format a datetime for the pill display
+    const formatSlotPreview = (dt) => {
+        if (!dt) return '';
+        const d = new Date(dt);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' at ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl w-full max-w-lg mx-4 shadow-2xl relative overflow-hidden">
-                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 className="text-xl font-bold text-[var(--color-light)]">
-                        {isEditing ? 'Edit Show' : 'Schedule New Show'}
-                    </h3>
+            <div className="bg-white rounded-3xl w-full max-w-lg mx-4 shadow-2xl relative overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+                    <div>
+                        <h3 className="text-xl font-bold text-[var(--color-light)]">
+                            {isEditing ? 'Edit Show' : 'Schedule New Shows'}
+                        </h3>
+                        {!isEditing && validTimesCount > 0 && (
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                {validTimesCount} show time{validTimesCount !== 1 ? 's' : ''} will be created
+                            </p>
+                        )}
+                    </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
+                    {/* Movie */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Movie *</label>
                         <select
@@ -1361,6 +1425,7 @@ const AddShowModal = ({ isOpen, onClose, onSubmit, editingShow, movies = [], cin
                         </select>
                     </div>
 
+                    {/* Cinema */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Cinema *</label>
                         <select
@@ -1377,6 +1442,7 @@ const AddShowModal = ({ isOpen, onClose, onSubmit, editingShow, movies = [], cin
                         </select>
                     </div>
 
+                    {/* Screen Name + Type */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-2">Screen Name *</label>
@@ -1402,16 +1468,76 @@ const AddShowModal = ({ isOpen, onClose, onSubmit, editingShow, movies = [], cin
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Show Date & Time *</label>
-                        <input
-                            type="datetime-local"
-                            value={formData.start_time}
-                            onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
-                        />
-                    </div>
+                    {/* Show Date & Time — EDIT MODE (single) */}
+                    {isEditing ? (
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Show Date & Time *</label>
+                            <input
+                                type="datetime-local"
+                                value={singleTime}
+                                onChange={(e) => setSingleTime(e.target.value)}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                            />
+                        </div>
+                    ) : (
+                        /* Show Date & Time — CREATE MODE (multiple) */
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-bold text-gray-700">
+                                    Show Dates & Times *
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={addTimeSlot}
+                                    className="flex items-center gap-1 text-xs font-bold text-[var(--color-primary)] hover:text-red-700 transition-colors px-2 py-1 rounded-lg hover:bg-red-50"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> Add Time
+                                </button>
+                            </div>
 
+                            <div className="space-y-2">
+                                {showTimes.map((time, index) => (
+                                    <div key={index} className="flex items-center gap-2 group">
+                                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-xs font-bold text-gray-500 shrink-0">
+                                            {index + 1}
+                                        </div>
+                                        <input
+                                            type="datetime-local"
+                                            value={time}
+                                            onChange={(e) => updateTimeSlot(index, e.target.value)}
+                                            className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all focus:bg-white text-gray-600"
+                                        />
+                                        {showTimes.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeTimeSlot(index)}
+                                                className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Remove this time slot"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Preview of added times */}
+                            {validTimesCount > 1 && (
+                                <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                                    <p className="text-xs font-bold text-blue-600 mb-2">📅 {validTimesCount} shows will be created:</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {showTimes.filter(t => t).map((t, i) => (
+                                            <span key={i} className="bg-white text-blue-700 text-xs font-medium px-2.5 py-1 rounded-lg border border-blue-200 shadow-sm">
+                                                {formatSlotPreview(t)}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Ticket Price */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Ticket Price (Rs.) *</label>
                         <input
@@ -1425,6 +1551,7 @@ const AddShowModal = ({ isOpen, onClose, onSubmit, editingShow, movies = [], cin
                         />
                     </div>
 
+                    {/* Actions */}
                     <div className="pt-4 flex gap-3">
                         <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">
                             Cancel
@@ -1434,7 +1561,9 @@ const AddShowModal = ({ isOpen, onClose, onSubmit, editingShow, movies = [], cin
                             disabled={submitting}
                             className="flex-1 btn btn-primary py-3 rounded-xl shadow-lg shadow-red-500/20 font-bold disabled:opacity-50"
                         >
-                            {submitting ? (isEditing ? 'Saving...' : 'Scheduling...') : (isEditing ? 'Save Changes' : 'Schedule Show')}
+                            {submitting
+                                ? (isEditing ? 'Saving...' : `Scheduling ${validTimesCount > 1 ? validTimesCount + ' Shows' : ''}...`)
+                                : (isEditing ? 'Save Changes' : `Schedule ${validTimesCount > 1 ? validTimesCount + ' Shows' : 'Show'}`)}
                         </button>
                     </div>
                 </form>

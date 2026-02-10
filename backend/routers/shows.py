@@ -53,6 +53,42 @@ def create_show(show: schemas.ShowCreate, db: Session = Depends(get_db)):
     return db_show
 
 
+@router.post("/batch", response_model=List[schemas.Show], status_code=201)
+def create_shows_batch(batch: schemas.BatchShowCreate, db: Session = Depends(get_db)):
+    """Create multiple shows at once with different date/times."""
+    # Validate movie exists
+    movie = db.query(models.Movie).filter(models.Movie.movie_id == batch.movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    
+    # Validate cinema exists
+    cinema = db.query(models.Cinema).filter(models.Cinema.cinema_id == batch.cinema_id).first()
+    if not cinema:
+        raise HTTPException(status_code=404, detail="Cinema not found")
+    
+    if not batch.start_times:
+        raise HTTPException(status_code=400, detail="At least one show time is required")
+    
+    created_shows = []
+    for start_time in batch.start_times:
+        db_show = models.Show(
+            movie_id=batch.movie_id,
+            cinema_id=batch.cinema_id,
+            screen_name=batch.screen_name,
+            screen_type=batch.screen_type,
+            start_time=start_time,
+            ticket_price=batch.ticket_price
+        )
+        db.add(db_show)
+        created_shows.append(db_show)
+    
+    db.commit()
+    for show in created_shows:
+        db.refresh(show)
+    
+    return created_shows
+
+
 @router.put("/{show_id}", response_model=schemas.Show)
 def update_show(show_id: int, show_update: schemas.ShowCreate, db: Session = Depends(get_db)):
     """Update an existing show."""

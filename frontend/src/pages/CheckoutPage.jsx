@@ -136,7 +136,7 @@ const CheckoutPage = () => {
 
         const bookingPayload = {
             show_id: showId,
-            user_id: user?.id || 'guest',
+            user_id: user?.id || null,
             seat_numbers: selectedSeats,
             total_amount: totalPrice,
             contact_email: formData.email,
