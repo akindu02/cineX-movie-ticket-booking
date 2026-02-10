@@ -113,7 +113,7 @@ class BookingSeat(BaseModel):
 
 class Booking(BookingBase):
     booking_id: int
-    show_id: int
+    show_id: Optional[int] = None
     user_id: Optional[str] = None
     total_amount: float
     status: str

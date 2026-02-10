@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from database import get_db
 import models
@@ -18,9 +18,10 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
     Steps:
     1. Validate that the show exists
     2. Check if requested seats are already booked for that show
-    3. Create the booking record
-    4. Create individual seat records
-    5. Return the created booking
+    3. If user_id provided, ensure user exists in DB
+    4. Create the booking record
+    5. Create individual seat records
+    6. Return the created booking
     """
     
     # 1. Validate show exists
@@ -29,7 +30,6 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Show not found")
     
     # 2. Check for already booked seats
-    # Get all existing bookings for this show
     existing_bookings = db.query(models.Booking).filter(
         models.Booking.show_id == booking.show_id,
         models.Booking.status != "cancelled"
@@ -40,7 +40,6 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
         for seat in existing_booking.seats:
             booked_seats.add(seat.seat_number)
     
-    # Check if any requested seat is already booked
     requested_seats = set(booking.seat_numbers)
     conflicts = requested_seats.intersection(booked_seats)
     
@@ -78,7 +77,7 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(db_booking)
     
-    # 4. Create seat records
+    # 5. Create seat records
     for seat_number in booking.seat_numbers:
         db_seat = models.BookingSeat(
             booking_id=db_booking.booking_id,
@@ -95,7 +94,10 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
 @router.get("/user/{user_id}", response_model=List[schemas.BookingWithShow])
 def get_user_bookings(user_id: str, db: Session = Depends(get_db)):
     """Get all bookings for a specific user with show details."""
-    bookings = db.query(models.Booking).filter(
+    bookings = db.query(models.Booking).options(
+        joinedload(models.Booking.show).joinedload(models.Show.cinema),
+        joinedload(models.Booking.seats)
+    ).filter(
         models.Booking.user_id == user_id
     ).order_by(models.Booking.booking_date.desc()).all()
     return bookings
@@ -104,7 +106,10 @@ def get_user_bookings(user_id: str, db: Session = Depends(get_db)):
 @router.get("/", response_model=List[schemas.BookingWithShow])
 def get_all_bookings(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Get all bookings (admin endpoint)."""
-    bookings = db.query(models.Booking).order_by(
+    bookings = db.query(models.Booking).options(
+        joinedload(models.Booking.show).joinedload(models.Show.cinema),
+        joinedload(models.Booking.seats)
+    ).order_by(
         models.Booking.booking_date.desc()
     ).offset(skip).limit(limit).all()
     return bookings
@@ -114,12 +119,10 @@ def get_all_bookings(skip: int = 0, limit: int = 100, db: Session = Depends(get_
 def get_booked_seats(show_id: int, db: Session = Depends(get_db)):
     """Get all booked seat numbers for a specific show."""
     
-    # Check if show exists
     show = db.query(models.Show).filter(models.Show.show_id == show_id).first()
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
     
-    # Get all active bookings for this show
     bookings = db.query(models.Booking).filter(
         models.Booking.show_id == show_id,
         models.Booking.status != "cancelled"
