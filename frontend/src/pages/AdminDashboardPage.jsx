@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatPrice, formatShowTime } from '../data/shows';
 import { getMovies, getAllShows, getAllBookings, deleteMovie, deleteShow, createShow, updateShow, createShowsBatch, createCinema, deleteCinema, updateCinema, createMovie, updateMovie, getAllCinemas } from '../services/api';
-import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, Coins, Calendar, TrendingUp, Clock, LogOut, Bell, Settings, Shield, Loader, X, Play } from 'lucide-react';
+import { LayoutGrid, Film, Monitor, Ticket, Search, Plus, Edit, Trash, Users, Coins, Calendar, Clock, LogOut, Bell, Settings, Shield, Loader, X, Play } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboardPage = () => {
@@ -53,14 +53,16 @@ const AdminDashboardPage = () => {
 
     // Stats Logic - now uses API data
     const stats = useMemo(() => {
-        const totalRevenue = bookings.reduce((acc, booking) => acc + (booking.total_amount || 0), 0);
+        const totalRevenue = bookings
+            .filter(b => b.status === 'confirmed')
+            .reduce((acc, booking) => acc + (booking.total_amount || 0), 0);
         const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
 
         return [
-            { label: 'Total Revenue', value: formatPrice(totalRevenue), change: '+12%', icon: Coins, color: 'bg-green-50 text-green-600' },
-            { label: 'Active Movies', value: movies.length, change: '+3', icon: Film, color: 'bg-blue-50 text-blue-600' },
-            { label: 'Total Shows', value: shows.length, change: '+24', icon: Monitor, color: 'bg-purple-50 text-purple-600' },
-            { label: 'Active Bookings', value: confirmedBookings, change: '+18%', icon: Ticket, color: 'bg-orange-50 text-orange-600' },
+            { label: 'Total Revenue', value: formatPrice(totalRevenue), icon: Coins, color: 'bg-green-50 text-green-600' },
+            { label: 'Active Movies', value: movies.length, icon: Film, color: 'bg-blue-50 text-blue-600' },
+            { label: 'Total Shows', value: shows.length, icon: Monitor, color: 'bg-purple-50 text-purple-600' },
+            { label: 'Active Bookings', value: confirmedBookings, icon: Ticket, color: 'bg-orange-50 text-orange-600' },
         ];
     }, [movies, shows, bookings]);
 
@@ -366,9 +368,6 @@ const OverviewSection = ({ stats, bookings = [], setActiveSection }) => {
                             <div className={`w-12 h-12 rounded-xl ${stat.color} flex items-center justify-center`}>
                                 <stat.icon className="w-6 h-6" />
                             </div>
-                            <span className="text-green-500 text-xs font-bold bg-green-50 px-2 py-1 rounded-full flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3" /> {stat.change}
-                            </span>
                         </div>
                         <p className="text-gray-500 text-sm font-medium">{stat.label}</p>
                         <h3 className="text-2xl font-bold text-[var(--color-light)]">{stat.value}</h3>
