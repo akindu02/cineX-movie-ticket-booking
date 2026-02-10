@@ -202,15 +202,7 @@ const BookingSuccessPage = () => {
                     </div>
                 </div>
 
-                {/* My Bookings Link */}
-                <div className="text-center mt-8">
-                    <Link
-                        to="/my-bookings"
-                        className="text-[var(--color-primary)] font-bold hover:underline"
-                    >
-                        View All My Bookings →
-                    </Link>
-                </div>
+
             </div>
         </div>
     );
