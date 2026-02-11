@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getMovies } from '../services/api';
-import { Star, Calendar, Clock, Ticket, Film, Users, Trophy, Loader } from 'lucide-react';
+import { Star, Calendar, Clock, Ticket, Film, Users, Trophy, Loader, ChevronRight } from 'lucide-react';
+import a1 from '../assets/a1.jpg';
+import a2 from '../assets/a2.jpg';
+import a3 from '../assets/a3.jpg';
 
 const HomePage = () => {
     // State for movies from API
@@ -9,10 +12,9 @@ const HomePage = () => {
     const [loading, setLoading] = useState(true);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const heroImages = [
-        '/img/b1.jpg',
-        '/img/b2.jpg',
-        '/img/b3.jpg',
-        '/img/b4.jpg'
+        a1,
+        a2,
+        a3
     ];
 
     // Fetch movies from API
@@ -208,7 +210,6 @@ const HomePage = () => {
     );
 };
 
-// Imports: I need to make sure I import what I used.
-import { ChevronRight } from 'lucide-react';
+
 
 export default HomePage;
