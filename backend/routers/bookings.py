@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from database import get_db
 import models
 import schemas
+from utils.email_service import send_booking_confirmation
 
 router = APIRouter(
     prefix="/bookings",
@@ -11,21 +12,30 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=schemas.Booking, status_code=201)
-def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)):
+def create_booking(
+    booking: schemas.BookingCreate, 
+    background_tasks: BackgroundTasks, 
+    db: Session = Depends(get_db)
+):
     """
-    Create a new booking.
+    Create a new booking and send confirmation email.
     
     Steps:
-    1. Validate that the show exists
+    1. Validate that the show exists (and fetch movie/cinema details for email)
     2. Check if requested seats are already booked for that show
     3. If user_id provided, ensure user exists in DB
     4. Create the booking record
     5. Create individual seat records
-    6. Return the created booking
+    6. Send confirmation email (background task)
+    7. Return the created booking
     """
     
-    # 1. Validate show exists
-    show = db.query(models.Show).filter(models.Show.show_id == booking.show_id).first()
+    # 1. Validate show exists (and eagerly load details for email)
+    show = db.query(models.Show).options(
+        joinedload(models.Show.movie),
+        joinedload(models.Show.cinema)
+    ).filter(models.Show.show_id == booking.show_id).first()
+
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
     
@@ -87,6 +97,20 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
     
     db.commit()
     db.refresh(db_booking)
+    
+    # 6. Send confirmation email (Background Task)
+    if booking.contact_email:
+        background_tasks.add_task(
+            send_booking_confirmation,
+            contact_email=booking.contact_email,
+            movie_title=show.movie.title,
+            cinema_name=show.cinema.name,
+            screen_name=show.screen_name,
+            show_time_obj=show.start_time,
+            seat_numbers=booking.seat_numbers,
+            booking_id=db_booking.booking_id,
+            total_amount=booking.total_amount
+        )
     
     return db_booking
 

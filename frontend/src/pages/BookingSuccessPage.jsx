@@ -81,7 +81,7 @@ const BookingSuccessPage = () => {
                     <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3 text-white" strokeWidth={3} />
                     </div>
-                    <span>Payment Successful! Your booking is confirmed.</span>
+                    <span>Payment Successful! An E-Ticket has been sent to {booking.contact_email || 'your email'}.</span>
                 </div>
 
                 {/* Landscape Ticket */}

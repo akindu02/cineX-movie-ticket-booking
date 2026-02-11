@@ -158,7 +158,8 @@ const CheckoutPage = () => {
                         date: new Date().toISOString(),
                         status: 'confirmed',
                         movie: movie,
-                        show: show
+                        show: show,
+                        contact_email: formData.email
                     }
                 }
             });
