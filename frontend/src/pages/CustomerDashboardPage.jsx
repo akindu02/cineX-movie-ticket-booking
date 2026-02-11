@@ -1,15 +1,35 @@
-import { useState, useEffect } from 'react';
-import { LayoutGrid, Ticket, User, LogOut, CreditCard, Bell, Settings, Shield, Loader } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { LayoutGrid, Ticket, User, LogOut, CreditCard, Bell, Settings, Shield, Loader, MapPin, Calendar, Clock, Download, ArrowUpRight, CheckCircle, X } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { formatShowTime } from '../data/shows';
 import { getUserBookings, cancelBooking } from '../services/api';
 import { useUser } from '@clerk/clerk-react';
 import toast from 'react-hot-toast';
-import { MapPin, Calendar, Clock, Download, ArrowUpRight, CheckCircle, X } from 'lucide-react';
 
 const CustomerDashboardPage = () => {
     const [activeSection, setActiveSection] = useState('overview');
     const navigate = useNavigate();
+    const { user, isLoaded } = useUser();
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchBookings = useCallback(async () => {
+        if (!isLoaded || !user) return;
+        try {
+            setLoading(true);
+            const data = await getUserBookings(user.id);
+            setBookings(data);
+        } catch (err) {
+            console.error("Failed to fetch bookings:", err);
+            toast.error("Failed to load bookings");
+        } finally {
+            setLoading(false);
+        }
+    }, [isLoaded, user]);
+
+    useEffect(() => {
+        fetchBookings();
+    }, [fetchBookings]);
 
     const handleSignOut = () => {
         // Here you would typically clear auth context/storage
@@ -19,10 +39,10 @@ const CustomerDashboardPage = () => {
     const renderContent = () => {
         switch (activeSection) {
             case 'bookings':
-                return <MyBookingsSection />;
+                return <MyBookingsSection bookings={bookings} loading={loading} refreshBookings={fetchBookings} />;
 
             default:
-                return <OverviewSection setActiveSection={setActiveSection} />;
+                return <OverviewSection setActiveSection={setActiveSection} bookings={bookings} loading={loading} />;
         }
     };
 
@@ -31,8 +51,6 @@ const CustomerDashboardPage = () => {
             {/* Sidebar */}
             <aside className="w-64 bg-white border-r border-gray-100 fixed h-[calc(100vh-80px)] hidden lg:block overflow-y-auto">
                 <div className="p-6">
-
-
                     <nav className="space-y-1">
                         <SidebarItem
                             icon={LayoutGrid}
@@ -46,14 +64,11 @@ const CustomerDashboardPage = () => {
                             active={activeSection === 'bookings'}
                             onClick={() => setActiveSection('bookings')}
                         />
-
                     </nav>
 
                     <div className="mt-8 pt-8 border-t border-gray-100">
                         <nav className="space-y-1">
-                            <SidebarItem icon={Bell} label="Notifications" />
-
-
+                            {/* <SidebarItem icon={Bell} label="Notifications" /> */}
                             <button
                                 onClick={handleSignOut}
                                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all font-medium mt-4"
@@ -91,7 +106,23 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
 
 /* --- Sub-Sections --- */
 
-const OverviewSection = ({ setActiveSection }) => {
+const OverviewSection = ({ setActiveSection, bookings, loading }) => {
+    if (loading) {
+        return (
+            <div className="animate-fade-in flex justify-center items-center py-20">
+                <Loader className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+            </div>
+        );
+    }
+
+    const totalBookings = bookings.length;
+    const upcomingShows = bookings.filter(b => b.show?.start_time && new Date(b.show.start_time) > new Date()).length;
+    // Calculate points: 10 points for every booking (dummy logic)
+    const points = totalBookings * 10;
+
+    // Recent activity: Top 3 most recent bookings
+    const recentActivity = bookings.slice(0, 3);
+
     return (
         <div className="animate-fade-in space-y-8">
             <div>
@@ -99,9 +130,9 @@ const OverviewSection = ({ setActiveSection }) => {
                 <p className="text-gray-500 mt-1">Welcome back! Here's what's happening today.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatsCard icon={Ticket} label="Total Bookings" value="12" color="bg-blue-50 text-blue-600" />
-                <StatsCard icon={Calendar} label="Upcoming Shows" value="2" color="bg-orange-50 text-orange-600" />
-                <StatsCard icon={CreditCard} label="Points" value="450" color="bg-purple-50 text-purple-600" />
+                <StatsCard icon={Ticket} label="Total Bookings" value={totalBookings} color="bg-blue-50 text-blue-600" />
+                <StatsCard icon={Calendar} label="Upcoming Shows" value={upcomingShows} color="bg-orange-50 text-orange-600" />
+                <StatsCard icon={CreditCard} label="Points Earned" value={points} color="bg-purple-50 text-purple-600" />
             </div>
 
             <div>
@@ -109,18 +140,26 @@ const OverviewSection = ({ setActiveSection }) => {
                     <h2 className="text-xl font-bold text-[var(--color-light)]">Recent Activity</h2>
                 </div>
                 <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
-                    {[1, 2, 3].map((_, i) => (
-                        <div key={i} className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
-                            <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center shrink-0">
-                                <Ticket className="w-5 h-5" />
+                    {recentActivity.length > 0 ? (
+                        recentActivity.map((booking) => (
+                            <div key={booking.booking_id} className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                                <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center shrink-0">
+                                    <Ticket className="w-5 h-5" />
+                                </div>
+                                <div className="flex-grow">
+                                    <h4 className="font-bold text-sm text-[var(--color-light)]">Ticket Purchased</h4>
+                                    <p className="text-xs text-gray-500">
+                                        {booking.show?.movie?.title || 'Unknown Movie'} • {booking.show?.screen_name || 'N/A'}
+                                    </p>
+                                </div>
+                                <span className="text-xs text-gray-400 font-medium">
+                                    {new Date(booking.booking_date || booking.show?.start_time).toLocaleDateString()}
+                                </span>
                             </div>
-                            <div className="flex-grow">
-                                <h4 className="font-bold text-sm text-[var(--color-light)]">Ticket Purchased</h4>
-                                <p className="text-xs text-gray-500">Dune: Part Two • IMAX Screen</p>
-                            </div>
-                            <span className="text-xs text-gray-400 font-medium">2 days ago</span>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <div className="p-8 text-center text-gray-400">No recent activity</div>
+                    )}
                 </div>
             </div>
         </div>
@@ -137,40 +176,12 @@ const StatsCard = ({ icon: Icon, label, value, color }) => (
     </div>
 );
 
-const MyBookingsSection = () => {
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    // Get user from Clerk
-    const { user, isLoaded } = useUser();
-
-    useEffect(() => {
-        const fetchBookings = async () => {
-            if (!isLoaded || !user) return;
-
-            try {
-                setLoading(true);
-                const data = await getUserBookings(user.id);
-                setBookings(data);
-            } catch (err) {
-                console.error("Failed to fetch bookings:", err);
-                setError("Failed to load bookings");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchBookings();
-    }, [isLoaded, user]);
-
+const MyBookingsSection = ({ bookings, loading, refreshBookings }) => {
     const handleCancelBooking = async (bookingId) => {
         try {
             await cancelBooking(bookingId);
             toast.success("Booking cancelled successfully");
-            // Refresh bookings
-            const data = await getUserBookings(user.id);
-            setBookings(data);
+            refreshBookings();
         } catch (err) {
             console.error("Failed to cancel booking:", err);
             toast.error("Failed to cancel booking");
@@ -181,14 +192,6 @@ const MyBookingsSection = () => {
         return (
             <div className="animate-fade-in flex justify-center items-center py-20">
                 <Loader className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="animate-fade-in text-center py-20">
-                <p className="text-red-500 font-bold">{error}</p>
             </div>
         );
     }
@@ -269,7 +272,5 @@ const MyBookingsSection = () => {
         </div>
     );
 };
-
-
 
 export default CustomerDashboardPage;

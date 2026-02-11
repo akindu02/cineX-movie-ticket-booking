@@ -96,6 +96,7 @@ def get_user_bookings(user_id: str, db: Session = Depends(get_db)):
     """Get all bookings for a specific user with show details."""
     bookings = db.query(models.Booking).options(
         joinedload(models.Booking.show).joinedload(models.Show.cinema),
+        joinedload(models.Booking.show).joinedload(models.Show.movie),
         joinedload(models.Booking.seats)
     ).filter(
         models.Booking.user_id == user_id
@@ -108,6 +109,7 @@ def get_all_bookings(skip: int = 0, limit: int = 100, db: Session = Depends(get_
     """Get all bookings (admin endpoint)."""
     bookings = db.query(models.Booking).options(
         joinedload(models.Booking.show).joinedload(models.Show.cinema),
+        joinedload(models.Booking.show).joinedload(models.Show.movie),
         joinedload(models.Booking.seats)
     ).order_by(
         models.Booking.booking_date.desc()

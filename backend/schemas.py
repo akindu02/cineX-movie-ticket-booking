@@ -90,6 +90,7 @@ class Show(ShowBase):
     movie_id: Optional[int] = None
     cinema_id: Optional[int] = None
     cinema: Optional[Cinema] = None  # Include cinema details in show info
+    movie: Optional[Movie] = None    # Include movie details in show info
 
     class Config:
         from_attributes = True
