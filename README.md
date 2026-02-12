@@ -57,6 +57,3 @@ The application supports secure authentication, real-time seat selection, movie 
 - Uvicorn (ASGI server)
 
 ---
-
-## 📂 Project Structure
-
