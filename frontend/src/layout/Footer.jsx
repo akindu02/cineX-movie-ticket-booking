@@ -49,22 +49,22 @@ const Footer = () => {
                         <ul className="space-y-4 text-sm text-gray-400">
                             <li className="flex items-start gap-3">
                                 <MapPin className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
-                                <span>123 Cinema Street, Colombo 03, Sri Lanka</span>
+                                <span>No 134/1, Galle Road, Dehiwala, Sri Lanka</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <Phone className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
-                                <span>+94 11 234 5678</span>
+                                <span>+94 70 220 2200</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <Mail className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
-                                <span>support@cinex.lk</span>
+                                <span>cinex@gmail.com</span>
                             </li>
                         </ul>
                     </div>
                 </div>
 
                 <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
-                    <p>© {new Date().getFullYear()} CineX Cinemas. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} CineX Cinemas 2026. All rights reserved.</p>
                     <p>Designed for the best cinema experience.</p>
                 </div>
             </div>
